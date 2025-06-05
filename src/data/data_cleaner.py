@@ -8,7 +8,7 @@ def delete_ambiguous_description_data(db, s3):
     query = '''
         SELECT *
         FROM travel_place tp
-        JOIN travel_image ti
+        LEFT JOIN travel_image ti
         ON tp.place_id = ti.place_id
         WHERE tp.description = '-'
         OR tp.description IS NULL
@@ -25,7 +25,11 @@ def delete_ambiguous_description_data(db, s3):
         object_key = place['s3_object_key']
         
         try:
-            s3.delete_object(object_key)
+            try:
+                s3.delete_object(object_key)
+            except:
+                logger.error(f'S3 삭제 실패 (place_id={place_id}): {e}')
+                break;
         
             db.execute_delete(
                 'DELETE FROM travel_image WHERE travel_image_id = %s'
@@ -39,6 +43,6 @@ def delete_ambiguous_description_data(db, s3):
                 , (place_id,)
             )
 
-            logger.info(f'{place['place_name']} 여행지 데이터 삭제 완료')
+            logger.info(f'(place_id={place_id}) 여행지 데이터 삭제 완료')
         except Exception as e:
             logger.error(f'삭제 중 오류 발생 (place_id={place_id}): {e}')
