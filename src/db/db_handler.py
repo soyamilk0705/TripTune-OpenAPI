@@ -135,8 +135,7 @@ class DatabaseHandler:
     def insert_travel_image(self, travel_image):
         insert_travel_image = '''
                             INSERT INTO travel_image(
-                                place_id, 
-                                s3_object_url, 
+                                place_id,
                                 s3_object_key,
                                 original_name, 
                                 file_name, 
@@ -151,7 +150,6 @@ class DatabaseHandler:
 
         self.cursor.execute(insert_travel_image, (
             travel_image.place_id,
-            travel_image.s3_object_url,
             travel_image.s3_object_key,
             travel_image.original_name, 
             travel_image.file_name, 

@@ -19,12 +19,9 @@ class S3Handler:
         except Exception as e:
             logger.error('s3 연결 실패 : ', e)
             
-    def upload_file(self, image_byte_arr, object_path):
+    def upload_file(self, image_byte_arr, object_key):
         try:
-            self.s3.upload_fileobj(image_byte_arr, self.bucket_name, object_path)
-            
-            object_url = 'https://' + self.bucket_name + '.s3.' + self.region_name + '.amazonaws.com/' + object_path
-            return object_url
+            self.s3.upload_fileobj(image_byte_arr, self.bucket_name, object_key)
         except Exception as e:
             logger.error('업로드 실패 : ', e)
 

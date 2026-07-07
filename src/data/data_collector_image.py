@@ -99,26 +99,24 @@ def save_travel_image(db, s3, district_id, place_id, image_url, is_thumbnail):
 
         
         original_name = image_url.split('/')[-1]
-        file_path = 'img/korea/' + str(district_id).zfill(2) + '/' + file_name
+        object_key = 'img/korea/' + str(district_id).zfill(2) + '/' + file_name
 
 
         # 이미지 다운 및 압축
         compressed_image, file_size = download_and_compress_image(image_url, 70)
         
         # s3 이미지 저장
-        object_url = s3.upload_file(compressed_image, file_path)
-        object_key = extract_s3_key(object_url)
-
+        s3.upload_file(compressed_image, object_key)
 
         # db 이미지 데이터 저장
         travel_image = TravelImage(
             place_id,
-            object_url,
             object_key,
             original_name,
             file_name,
             'jpg',
             file_size,
+            datetime.now(),
             datetime.now(),
             is_thumbnail,
             image_url
