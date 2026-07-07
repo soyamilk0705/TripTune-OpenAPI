@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 from db.db_handler import DatabaseHandler
 from data.data_collector_image import *
 from data.data_collector_area import *
-from data.data_collector_category import *
 from data.data_collector_travel import *
 from data.data_cleaner import *
 from aws.s3_handler import *
@@ -36,9 +35,6 @@ def main():
     try:
         # korea_city_code(db)
         # korea_district_code(db)
-        # korea_category1_code(db)
-        # korea_category2_code(db)
-        # korea_category3_code(db)
 
         limited_korea_travel_places(db, s3, '강원특별자치도', '철원군', '음식점', 30)
         # delete_ambiguous_description_data(db, s3)

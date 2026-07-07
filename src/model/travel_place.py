@@ -6,7 +6,6 @@ from model.location import *
 @dataclass
 class TravelPlace:
     location: Location
-    category_code: str
     content_type_id: int
     place_name: str
     address: str

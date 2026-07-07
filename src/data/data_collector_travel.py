@@ -78,7 +78,6 @@ def save_limited_travel_places(db, s3, url, params, total_count, location, conte
     
             travel_place = TravelPlace(
                 location=location,
-                category_code=item['cat3'],
                 content_type_id=content_type['content_type_id'],
                 place_name=item['title'],
                 address=item['addr1'],

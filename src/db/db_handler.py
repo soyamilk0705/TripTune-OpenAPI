@@ -68,68 +68,64 @@ class DatabaseHandler:
 
 
     def insert_travel_place(self, travel_place):
+
         insert_travel_place = '''
                             INSERT INTO travel_place(
-                                country_id, 
-                                city_id, 
-                                district_id, 
-                                category_code, 
-                                content_type_id, 
-                                place_name, 
-                                address, 
-                                api_content_id, 
-                                api_created_at, 
+                                country_id,
+                                city_id,
+                                district_id,
+                                content_type_id,
+                                place_name,
+                                address,
+                                api_content_id,
+                                api_created_at,
                                 api_updated_at,
+                                created_at,
+                                updated_at,
                                 detail_address,
                                 use_time,
                                 check_in_time,
                                 check_out_time,
                                 homepage,
                                 phone_number,
-                                longitude, 
-                                latitude, 
-                                description,
-                                created_at
-                            ) 
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
+                                longitude,
+                                latitude,
+                                description
+                            )
+                            VALUES (
+                                %s, %s, %s, %s, %s,
+                                %s, %s, %s, %s, %s,
+                                %s, %s, %s, %s, %s,
+                                %s, %s, %s, %s, %s
+                            )
                         '''
 
         self.cursor.execute(insert_travel_place, (
-            travel_place.location.country_id, 
-            travel_place.location.city_id, 
-            travel_place.location.district_id, 
-            travel_place.category_code, 
+            travel_place.location.country_id,
+            travel_place.location.city_id,
+            travel_place.location.district_id,
             travel_place.content_type_id,
-            travel_place.place_name, 
+            travel_place.place_name,
             travel_place.address,
-            travel_place.api_content_id, 
-            travel_place.api_created_at, 
+            travel_place.api_content_id,
+            travel_place.api_created_at,
             travel_place.api_updated_at,
+            travel_place.created_at,
+            travel_place.updated_at,
             travel_place.detail_address,
             travel_place.use_time,
             travel_place.check_in_time,
             travel_place.check_out_time,
             travel_place.homepage,
             travel_place.phone_number,
-            travel_place.longitude, 
+            travel_place.longitude,
             travel_place.latitude,
             travel_place.description
         ))
         
         self.conn.commit()
 
-    def insert_category(self, category):
-        insert_category = 'INSERT INTO api_category(category_code, category_name, parent_code, level) VALUES (%s, %s, %s, %s)'
-
-        self.cursor.execute(insert_category, (
-            category.category_code,
-            category.category_name,
-            category.parent_code,
-            category.level
-        ))
-
-        self.conn.commit()
-                
+     
     
 
     def insert_travel_image(self, travel_image):
