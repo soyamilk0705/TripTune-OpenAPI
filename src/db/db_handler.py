@@ -125,8 +125,6 @@ class DatabaseHandler:
         
         self.conn.commit()
 
-     
-    
 
     def insert_travel_image(self, travel_image):
         insert_travel_image = '''
@@ -165,6 +163,33 @@ class DatabaseHandler:
     def execute_last_inserted_id(self):
         return self.cursor.lastrowid
     
+
+    def delete_district(self, district_id):
+        delete_district = """
+            DELETE FROM district
+            WHERE district.district_id = %s
+        """
+        self.cursor.execute(delete_district, (district_id,))
+        self.conn.commit()
+
+    def delete_travel_place_by_district(self, district_id):
+        delete_travel_place = """
+            DELETE FROM travel_place
+            WHERE travel_place.district_id = %s
+        """
+        self.cursor.execute(delete_travel_place, (district_id,))
+        
+
+    def delete_travel_image_by_district(self, district_id):
+        delete_travel_image = """
+            DELETE ti
+            FROM travel_image ti
+            JOIN travel_place tp
+            ON ti.place_id = tp.place_id
+            WHERE tp.district_id = %s
+        """
+        self.cursor.execute(delete_travel_image, (district_id,))
+
 
     def execute_delete(self, query, params):
         self.cursor.execute(query, params)

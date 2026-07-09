@@ -36,8 +36,10 @@ def main():
         # korea_city_code(db)
         # korea_district_code(db)
 
-        limited_korea_travel_places(db, s3, '강원특별자치도', '철원군', '음식점', 30)
+        # limited_korea_travel_places(db, s3, '강원특별자치도', '철원군', '음식점', 30)
         # delete_ambiguous_description_data(db, s3)
+
+        delete_district_data(db, s3, 107)
 
     finally:
         db.close()

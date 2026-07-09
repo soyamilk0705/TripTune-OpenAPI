@@ -93,3 +93,18 @@ def korea_district_code(db, secret_key, base_url):
 
 
     
+def delete_district_data(db, s3, district_id):
+    try:
+        db.delete_travel_image_by_district(district_id)
+        db.delete_travel_place_by_district(district_id)
+        db.delete_district(district_id)
+
+        db.conn.commit()
+
+        s3.delete_objects_by_district(district_id)
+
+        logger.info(f'district_id {district_id}번 데이터 삭제 완료')
+
+    except Exception:
+        db.conn.rollback()
+        logger.exception(f'district_id {district_id}번 데이터 삭제 실패')
