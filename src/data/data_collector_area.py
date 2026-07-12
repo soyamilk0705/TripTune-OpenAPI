@@ -2,11 +2,12 @@ from api.api_handler import *
 from utils.utils import *
 from utils.log_handler import setup_logger
 from db.db_handler import DatabaseHandler
+from aws import S3Handler
 
 logger = setup_logger()
 
 
-def korea_city_code(db, secret_key, base_url):
+def korea_city_code(db : DatabaseHandler, secret_key : str, base_url : str):
     '''
     도시 데이터를 조회 및 저장한다.
 
@@ -32,7 +33,7 @@ def korea_city_code(db, secret_key, base_url):
 
     # DB 에 저장된 나라 id 조회
     select_country = 'SELECT country_id FROM country WHERE country_name = "대한민국"'
-    country_id = db.execute_select_one(select_country)['country_id']
+    country_id = db.fetch_one(select_country)['country_id']
 
     items = fetch_items(url, params, total_count)
 
@@ -47,7 +48,7 @@ def korea_city_code(db, secret_key, base_url):
 
 
 
-def korea_district_code(db, secret_key, base_url):
+def korea_district_code(db : DatabaseHandler, secret_key : str, base_url : str):
     '''
     시군구 데이터를 조회 및 저장한다.
     api 요청 시 parameter 중 areaCode 에 open api 에서 지정한 도시의 id 값을 넣어 요청한다.
@@ -93,7 +94,15 @@ def korea_district_code(db, secret_key, base_url):
 
 
     
-def delete_district_data(db, s3, district_id):
+def delete_district_data(db : DatabaseHandler, s3 : S3Handler, district_id : int):
+    """
+    시군구 데이터를 삭제한다. 삭제 시 해당 시군구에 포함된 여행지, 여행지 이미지도 함께 삭제한다.
+    
+    - distrct 데이터 삭제
+    - travel_place 데이터 삭제
+    - travel_image 데이터 삭제
+    - S3 이미지 삭제
+    """
     try:
         db.delete_travel_image_by_district(district_id)
         db.delete_travel_place_by_district(district_id)

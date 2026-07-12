@@ -1,10 +1,15 @@
 import boto3
+from io import BytesIO
 from utils.log_handler import setup_logger
 
 logger = setup_logger()
 
 class S3Handler:
-    def __init__(self, region_name, bucket_name, aws_access_key_id, aws_secret_access_key):
+    def __init__(self, 
+                 region_name : str, 
+                 bucket_name : str, 
+                 aws_access_key_id : str, 
+                 aws_secret_access_key : str):
         try:
             # 파일 업로드/삭제용
             self.s3_client = boto3.client(
@@ -28,7 +33,7 @@ class S3Handler:
         except Exception:
             logger.exception(f's3 연결 실패')
             
-    def upload_file(self, image_byte_arr, object_key):
+    def upload_file(self, image_byte_arr : BytesIO, object_key : str):
         try:
             self.s3_client.upload_fileobj(
                 Fileobj=image_byte_arr,
@@ -40,7 +45,7 @@ class S3Handler:
             logger.exception(f'{object_key} 업로드 실패')
 
 
-    def delete_object(self, object_key):
+    def delete_object(self, object_key : str):
         try:
             self.s3_client.delete_object(
                 Bucket=self.bucket_name,
@@ -52,7 +57,7 @@ class S3Handler:
             logger.exception(f'{object_key} 삭제 실패')
             
     
-    def delete_objects_by_district(self, district_id):
+    def delete_objects_by_district(self, district_id : int):
         prefix = f'img/korea/{district_id}/'
 
         try:

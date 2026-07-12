@@ -7,7 +7,7 @@ from io import BytesIO
 
 logger = setup_logger()
 
-def convert_to_datetime(date_string):
+def convert_to_datetime(date_string : str):
     '''
     파라미터로 전달된 data_string(날짜 문자열)을 mysql 에서 사용하는 날짜 데이터 형식인 문자열로 변환한다.
 
@@ -26,7 +26,7 @@ def convert_to_datetime(date_string):
     return mysql_date_format
 
 
-def download_and_compress_image(image_url, quality):
+def download_and_compress_image(image_url : str, quality : int):
     '''
     파라미터로 전달된 관광지 이미지 url에서 이미지를 다운로드 한 후 압축한다.
 

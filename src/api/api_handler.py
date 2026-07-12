@@ -7,7 +7,7 @@ from utils.log_handler import setup_logger
 
 logger = setup_logger()
 
-def get_json_data(url, params):
+def get_json_data(url : str, params : dict):
     '''
     api 요청 후 json으로 변환한다.
     요청 시 특수문자로 인한 오류를 방지하기 위해 파라미터 값들을 인코딩한다.
@@ -60,7 +60,7 @@ def get_json_data(url, params):
 
 
 
-def get_total_count(url, params):
+def get_total_count(url : str, params : dict):
     '''
     get_json_data 함수를 통해 api 요청 후 요청 결과의 총 데이터 갯수를 찾아 반환한다.
 
@@ -78,7 +78,7 @@ def get_total_count(url, params):
 
 
 
-def fetch_items(url, params, total_count):
+def fetch_items(url : str, params : dict, total_count : int):
     '''
     get_json_data 함수를 통해 api 요청해 요청 결과에 item 만 추출해서 리스트에 저장한다.
     total_count 로 총 페이지 수(pageNo) 를 계산해 반복문에 이용한다.
@@ -108,7 +108,7 @@ def fetch_items(url, params, total_count):
 
 
 
-def fetch_one_page_items(url, params):
+def fetch_one_page_items(url : str, params : dict):
     '''
     get_json_data 함수를 통해 api 요청해 요청 결과에 item 만 추출해서 리스트에 저장한다.
     pageNo = 1 로 설정해 최대 10개의 데이터만 요청하도록 한다.

@@ -14,6 +14,8 @@ class TravelPlace:
     api_updated_at: datetime
     created_at: datetime
     updated_at: datetime
+    
+    place_id: Optional[int] = None
     detail_address: Optional[str] = None
     use_time: Optional[str] = None
     check_in_time: Optional[str] = None

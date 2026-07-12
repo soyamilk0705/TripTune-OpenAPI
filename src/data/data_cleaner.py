@@ -1,10 +1,11 @@
 from aws.s3_handler import *
 from utils.log_handler import setup_logger
+from db import DatabaseHandler
 import time
 
 logger = setup_logger()
 
-def delete_ambiguous_description_data(db, s3):
+def delete_ambiguous_description_data(db : DatabaseHandler, s3 : S3Handler):
     query = '''
         SELECT *
         FROM travel_place tp
@@ -15,7 +16,7 @@ def delete_ambiguous_description_data(db, s3):
         OR tp.description = ''
     '''
 
-    shopping_places = db.execute_select_all(query)
+    shopping_places = db.execute_fetch_all(query)
 
     logger.info(f'{len(shopping_places)} 개 데이터 조회 완료')
 
@@ -29,7 +30,7 @@ def delete_ambiguous_description_data(db, s3):
                 s3.delete_object(object_key)
             except:
                 logger.error(f'S3 삭제 실패 (place_id={place_id}): {e}')
-                break;
+                break
         
             db.execute_delete(
                 'DELETE FROM travel_image WHERE travel_image_id = %s'
