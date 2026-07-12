@@ -90,13 +90,15 @@ def get_json_data(url : str, params : dict):
     '''
     encoding_params = urllib.parse.urlencode(params, safe='#\':()+=%,')
 
-    response = requests.get(url, params=encoding_params)
+    response = requests.get(url, params=encoding_params)    
     content_type = response.headers.get('Content-Type')
 
     if response.status_code == 200:
         if 'application/json' in content_type:
             try:
                 data = response.json()
+                print(data)
+                print()
 
                 if 'response' in data and 'body' in data['response']:
                     return data

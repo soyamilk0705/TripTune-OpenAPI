@@ -33,28 +33,28 @@ class S3Handler:
         except Exception:
             logger.exception(f's3 연결 실패')
             
-    def upload_file(self, image_byte_arr : BytesIO, object_key : str):
+    def upload_file(self, image_byte_arr : BytesIO, s3_object_key : str):
         try:
             self.s3_client.upload_fileobj(
                 Fileobj=image_byte_arr,
                 Bucket=self.bucket_name, 
-                Key=object_key
+                Key=s3_object_key
             )
-            logger.info(f'{object_key} 업로드 완료')
+            logger.info(f'{s3_object_key} 업로드 완료')
         except Exception as e:
-            logger.exception(f'{object_key} 업로드 실패')
+            logger.exception(f'{s3_object_key} 업로드 실패')
 
 
-    def delete_object(self, object_key : str):
+    def delete_object(self, s3_object_key : str):
         try:
             self.s3_client.delete_object(
                 Bucket=self.bucket_name,
-                Key=object_key
+                Key=s3_object_key
             )
 
-            logger.info(f'{object_key} 삭제 완료')
+            logger.info(f'{s3_object_key} 삭제 완료')
         except Exception:
-            logger.exception(f'{object_key} 삭제 실패')
+            logger.exception(f'{s3_object_key} 삭제 실패')
             
     
     def delete_objects_by_district(self, district_id : int):

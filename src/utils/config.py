@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-BASE_URL = 'http://apis.data.go.kr/B551011/KorService1'
+BASE_URL = 'http://apis.data.go.kr/B551011/KorService2'
 NUM_OF_ROWS = 10
 MOBILE_OS = 'ETC'
 MOBILE_APP = 'TripTune'
@@ -43,9 +43,7 @@ def build_detail_params():
         'pageNo': 1,
         'MobileOS': MOBILE_OS,
         'MobileApp': MOBILE_APP,
-        '_type': RESPONSE_TYPE,
-        'overviewYN': 'Y',
-        'defaultYN': 'Y'
+        '_type': RESPONSE_TYPE
     }
 
 
@@ -60,6 +58,5 @@ def build_image_params():
         'MobileOS': MOBILE_OS,
         'MobileApp': MOBILE_APP,
         '_type': RESPONSE_TYPE,
-        'imageYN': 'Y',
-        'subImageYN': 'Y'
+        'imageYN': 'Y'
     }

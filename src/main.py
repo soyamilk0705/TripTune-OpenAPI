@@ -33,13 +33,8 @@ def main():
     s3 = S3Handler(s3_region_name, s3_bucket_name, aws_accees_key_id, aws_secret_access_key)
     
     try:
-        # korea_city_code(db)
-        # korea_district_code(db)
+        save_travel_places(db, s3, '서울특별시', '강남구', '관광지', 3)
 
-        # limited_korea_travel_places(db, s3, '강원특별자치도', '철원군', '음식점', 30)
-        # delete_ambiguous_description_data(db, s3)
-
-        delete_district_data(db, s3, 107)
 
     finally:
         db.close()

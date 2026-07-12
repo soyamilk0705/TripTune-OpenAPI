@@ -6,7 +6,7 @@ class DatabaseHandler:
             host=host,
             user=user,
             password=password,
-            db=db,
+            database=db,
             port=port,
             charset='utf8',
             cursorclass=pymysql.cursors.DictCursor

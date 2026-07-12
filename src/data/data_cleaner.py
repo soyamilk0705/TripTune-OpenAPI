@@ -13,11 +13,11 @@ def delete_ambiguous_description_data(db : DatabaseHandler, s3 : S3Handler):
     for place in shopping_places:
         place_id = place['place_id']
         image_id = place['travel_image_id']
-        object_key = place['s3_object_key']
+        s3_object_key = place['s3_object_key']
         
         try:
             try:
-                s3.delete_object(object_key)
+                s3.delete_object(s3_object_key)
             except:
                 logger.error(f'S3 삭제 실패 (place_id={place_id}): {e}')
                 break

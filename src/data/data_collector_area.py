@@ -1,9 +1,8 @@
 from api.api_handler import fetch_api_items
-# from utils.utils import 
 from utils.log_handler import setup_logger
 from db.db_handler import DatabaseHandler
-from aws import S3Handler
-from db import area_db, travel_place_db, travel_image_db
+from aws.s3_handler import S3Handler
+from db import area_db
 
 logger = setup_logger()
 
@@ -18,7 +17,7 @@ def korea_city_code(db : DatabaseHandler, secret_key : str, base_url : str):
     secret_key: open api 연동을 위해 사용할 키
     base_url: open api url 정보
     '''
-    url = base_url + '/areaCode1'
+    url = base_url + '/ldongCode2'
 
     params = {
         'serviceKey': secret_key,
@@ -54,7 +53,7 @@ def korea_district_code(db : DatabaseHandler, secret_key : str, base_url : str):
     secret_key: open api 연동을 위해 사용할 키
     base_url: open api url 정보
     '''
-    url = base_url + '/areaCode1'
+    url = base_url + '/ldongCode2'
 
     params = {
         'serviceKey': secret_key,

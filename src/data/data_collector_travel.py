@@ -31,11 +31,11 @@ def save_travel_places(db : DatabaseHandler,
     - /detailImage1
     
     '''
-    url = BASE_URL + '/areaBasedList1'
+    url = BASE_URL + '/areaBasedList2'
     params = build_params()
 
     # 지역 조회
-    korea_area = area_db.get_area('대한민국', city, district)
+    korea_area = area_db.get_area(db, '대한민국', city, district)
 
     if not korea_area:
         logger.error(f'지역 정보가 존재하지 않습니다 - {city}, {district}')
@@ -43,7 +43,7 @@ def save_travel_places(db : DatabaseHandler,
 
 
     # 컨텐츠 타입 조회
-    content_type = content_type_db.get_api_content_type(target_content_name)
+    content_type = content_type_db.get_api_content_type(db, target_content_name)
     
     location = Location(korea_area['country_id'], korea_area['city_id'], korea_area['district_id'])
 
@@ -122,10 +122,10 @@ def process_travel_places(db : DatabaseHandler,
     now = datetime.now()
 
     for item in items:
-        if result['proceesed'] >= target_count:
+        if result['processed'] >= target_count:
             break
 
-        saved_place = travel_place_db.get_travel_place(item['contentid'])
+        saved_place = travel_place_db.get_travel_place(db, item['contentid'])
 
         api_updated_at = convert_to_datetime(item['modifiedtime'])
 
@@ -168,7 +168,7 @@ def get_travel_place_detail(api_content_id : int):
     저장 위치 : travel_place.description
 
     '''
-    url = BASE_URL + '/detailCommon1'
+    url = BASE_URL + '/detailCommon2'
     params = build_detail_params()
 
     params['contentId'] = api_content_id
@@ -194,7 +194,7 @@ def get_travel_place_detail(api_content_id : int):
             if start_index != -1:
                 details['homepage'] = homepage[start_index:]
 
-    logger.info(f'korea_travel_place_detail() - {api_content_id} 관광지 설명 데이터 조회 완료')
+    logger.info(f'[get_travel_place_detail()] {api_content_id} 관광지 설명 데이터 조회 완료')
     return details
 
 
@@ -205,7 +205,7 @@ def get_travel_place_info(api_content_type_id : int, api_content_id : int):
 
     '''
 
-    url = BASE_URL + '/detailIntro1'
+    url = BASE_URL + '/detailIntro2'
     params = build_params()
 
     params['contentId'] = api_content_id
@@ -246,7 +246,7 @@ def get_travel_place_info(api_content_type_id : int, api_content_id : int):
         info['use_time'] = item['opentimefood'] or None 
 
 
-    logger.info(f'korea_travel_place_info() - {api_content_id} 관광지 전화번호, 이용시간 데이터 조회 완료')
+    logger.info(f'[get_travel_place_info()] {api_content_id} 관광지 전화번호, 이용시간 데이터 조회 완료')
     return info
 
 
@@ -285,8 +285,10 @@ def save_new_travel_place(db : DatabaseHandler,
     
     travel_place.created_at = now
     travel_place.updated_at = now
-    travel_place_db.insert_travel_place(travel_place)
+    travel_place_db.insert_travel_place(db, travel_place)
     travel_place.place_id = db.get_last_inserted_id()
+
+    logger.info(f'[save_new_travel_place] {travel_place.place_name} 여행지 DB 신규 저장')
 
     # ---------- 썸네일 이미지 저장 ----------
     if item['firstimage']:
@@ -304,17 +306,19 @@ def sync_travel_place(db : DatabaseHandler,
                       now : datetime):
     travel_place.place_id = saved_place['place_id']
     travel_place.updated_at = now
-    travel_place_db.update_travel_place(travel_place)
+    travel_place_db.update_travel_place(db, travel_place)
+    
+    logger.info(f'[sync_travel_place] {travel_place.place_name} 여행지 DB 수정')
 
     # ---------- 썸네일 이미지 저장 ----------
     if item['firstimage']:
         sync_thumbnail_travel_image(db, s3, travel_place, item['firstimage'])
     else:
-        thumbnail_image = travel_image_db.get_travel_thumbnail_image(saved_place['place_id'])
+        thumbnail_image = travel_image_db.get_travel_thumbnail_image(db, saved_place['place_id'])
         
         if thumbnail_image:
-            s3.delete_object(thumbnail_image['object_key'])
-            travel_image_db.delete_travel_thumbnail_image(saved_place['place_id'])
+            s3.delete_object(thumbnail_image['s3_object_key'])
+            travel_image_db.delete_travel_thumbnail_image(db, saved_place['place_id'])
         
     sync_travel_detail_images(db, s3, travel_place)
 

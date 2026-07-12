@@ -16,7 +16,7 @@ def get_travel_place(db : DatabaseHandler, api_content_id : int):
         FROM travel_place
         WHERE api_content_id = %s
     """
-    db.execute_fetch_one(query, (api_content_id,))
+    return db.execute_fetch_one(query, (api_content_id,))
 
 
 def get_empty_description_travel_place(db : DatabaseHandler):
