@@ -1,8 +1,9 @@
-from api.api_handler import *
-from utils.utils import *
+from api.api_handler import fetch_api_items
+# from utils.utils import 
 from utils.log_handler import setup_logger
 from db.db_handler import DatabaseHandler
 from aws import S3Handler
+from db import area_db, travel_place_db, travel_image_db
 
 logger = setup_logger()
 
@@ -28,21 +29,15 @@ def korea_city_code(db : DatabaseHandler, secret_key : str, base_url : str):
         '_type': 'json',
     }
 
-    # 전체 갯수 조회
-    total_count = get_total_count(url, params)
-
     # DB 에 저장된 나라 id 조회
-    select_country = 'SELECT country_id FROM country WHERE country_name = "대한민국"'
-    country_id = db.fetch_one(select_country)['country_id']
-
-    items = fetch_items(url, params, total_count)
+    country_id = area_db.get_country_id(db, '대한민국')['country_id']
+    items = fetch_api_items(url, params)
 
     for item in items:
-        area_code = item['code']
+        api_city_code = item['code']
         city_name = item['name']
 
-        insert_city = 'INSERT INTO city(country_id, api_area_code, city_name) VALUES (%s, %s, %s)'
-        db.execute_insert(insert_city, (country_id, area_code, city_name))
+        area_db.insert_city(db, country_id, api_city_code, city_name)
 
     logger.info('city 데이터 저장 완료')
 
@@ -71,24 +66,20 @@ def korea_district_code(db : DatabaseHandler, secret_key : str, base_url : str):
     }
 
     # DB 에 저장된 city 데이터 조회
-    select_city = 'SELECT city_id, api_area_code FROM city'
-    cities = db.execute_select_all(select_city)
-    
+    cities = area_db.get_cities(db)
 
     for city in cities:
         city_id = city['city_id']
-        params['areaCode'] = city['api_area_code']
+        params['lDongRegnCd'] = city['api_city_code']
         
         # 전체 갯수 조회
-        total_count = get_total_count(url, params)
-        items = fetch_items(url, params, total_count)
+        items = fetch_api_items(url, params)
 
         for item in items:
-            sigungu_code = item['code']
+            api_district_code = item['code']
             district_name = item['name']
 
-            insert_district = 'INSERT INTO district(city_id, api_sigungu_code, district_name) VALUES (%s, %s, %s)'
-            db.execute_insert(insert_district, (city_id, sigungu_code, district_name))
+            area_db.insert_district(db, city_id, api_district_code, district_name)
         
     logger.info('district 데이터 저장 완료')
 

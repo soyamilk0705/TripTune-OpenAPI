@@ -6,17 +6,18 @@ from utils.config import *
 from db.db_handler import DatabaseHandler
 from model.travel_place import TravelPlace
 from model.location import Location
+from db import travel_place_db, area_db, content_type_db, travel_image_db
 
 
 logger = setup_logger()
 
 
 def save_travel_places(db : DatabaseHandler, 
-                                s3 : S3Handler, 
-                                city : str, 
-                                district : str, 
-                                target_content_name : str, 
-                                target_count : int):
+                       s3 : S3Handler, 
+                       city : str, 
+                       district : str, 
+                       target_content_name : str, 
+                       target_count : int):
     '''
     파라미터로 전달된 지역 정보와 DB에 저장된 컨텐츠 타입을 이용해 특정 지역의 관광지를 조회하고 저장한다.
     관광지 정보, 해당 관광지에 대한 소개 정보, 썸네일 이미지 등을 저장하는 기능을 한다.
@@ -34,7 +35,7 @@ def save_travel_places(db : DatabaseHandler,
     params = build_params()
 
     # 지역 조회
-    korea_area = db.get_area('대한민국', city, district)
+    korea_area = area_db.get_area('대한민국', city, district)
 
     if not korea_area:
         logger.error(f'지역 정보가 존재하지 않습니다 - {city}, {district}')
@@ -42,32 +43,48 @@ def save_travel_places(db : DatabaseHandler,
 
 
     # 컨텐츠 타입 조회
-    content_type = db.get_api_content_type(target_content_name)
+    content_type = content_type_db.get_api_content_type(target_content_name)
     
     location = Location(korea_area['country_id'], korea_area['city_id'], korea_area['district_id'])
-    
-    count = 0
 
     params['contentTypeId'] = content_type['api_content_type_id']
     params['lDongRegnCd'] = korea_area['api_city_code']
     params['lDongSignguCd'] = korea_area['api_district_code']
 
-    total_count = get_total_count(url, params)
-    logger.info(f'총 데이터 갯수(total_count) - {total_count} 개')
+    items = fetch_api_items(url, params)
 
-    if total_count != 0:
-        count = process_travel_places(db, s3, url, params, total_count, location, content_type, target_count)
+    total_count = len(items)
+    logger.info(f'총 데이터 개수 - {total_count}개')
+
+    if not items:
+        logger.info(f'[{city} {district} {target_content_name}] 조회된 관광지 데이터가 없습니다.')
+        return
+
+    result = process_travel_places(
+        db,
+        s3,
+        items,
+        location,
+        content_type,
+        target_count
+    )
 
     logger.info('======================================================================')
-    logger.info(f'limited_korea_travel_places() - [{city} {district} {target_content_name}] 총 {total_count}개 데이터 중 {count}개 저장 완료')
-
+    logger.info(f'''
+                [{city} {district} {target_content_name} 수집 완료] 
+                
+                전체 관광지 : {total_count}개 
+                수집 데이터 : {result['processed']}개
+                신규 저장 : {result['insert']}개
+                수정 데이터 : {result['update']}개
+                변경 없음 : {result['skip']}개
+                '''
+    )
 
 
 def process_travel_places(db : DatabaseHandler, 
-                          s3 : S3Handler, 
-                          url : str, 
-                          params : dict, 
-                          total_count : int, 
+                          s3 : S3Handler,
+                          items : dict,
                           location : Location, 
                           content_type : dict, 
                           target_count : int):
@@ -95,22 +112,27 @@ def process_travel_places(db : DatabaseHandler,
                 - 상세 이미지 저장
     '''
     
-    # 총 저장된 데이터 갯수 확인하기 위한 변수
-    count = 0
-
-    items = fetch_items(url, params, total_count)
+    # 총 저장된 데이터 갯수 확인
+    result = {
+        'processed' : 0,
+        'insert' : 0,
+        'update' : 0,
+        'skip' : 0
+    }
     now = datetime.now()
 
     for item in items:
-        if count >= target_count:
+        if result['proceesed'] >= target_count:
             break
 
-        saved_place = db.get_travel_place(item['contentid'])
+        saved_place = travel_place_db.get_travel_place(item['contentid'])
 
-        # 변경되거나 신규 여행지만 통과
         api_updated_at = convert_to_datetime(item['modifiedtime'])
+
+        # 변경없는 데이터
         if saved_place and saved_place['api_updated_at'] == api_updated_at:
-                continue
+            result['skip'] += 1
+            continue
         
         # ---------- 관광지 소개 정보 조회 ----------
         details = get_travel_place_detail(item['contentid'])
@@ -127,15 +149,16 @@ def process_travel_places(db : DatabaseHandler,
        
         if saved_place is None:
             save_new_travel_place(db, s3, item, travel_place, now)
+            result['insert'] += 1
         else: 
             sync_travel_place(db, s3, item, travel_place, saved_place, now)
+            result['update'] += 1
         
-        count += 1
-        
+        result['processed'] += 1
         logger.info('-------------------------------------------------------------------')
-        logger.info(f'{count} 개 데이터 저장 완료')
+        logger.info(f'{result['processed']} 개 데이터 저장 완료')
     
-    return count
+    return result
 
 
 
@@ -149,14 +172,12 @@ def get_travel_place_detail(api_content_id : int):
     params = build_detail_params()
 
     params['contentId'] = api_content_id
-    total_count = get_total_count(url, params)
-
     details = {'description': None, 'homepage': None}
 
-    if total_count == 0:
-        return details
+    items = fetch_api_items(url, params)
 
-    items = fetch_items(url, params, total_count)
+    if not items:
+        return details
 
     for item in items:
         description = item['overview'].strip()
@@ -190,8 +211,6 @@ def get_travel_place_info(api_content_type_id : int, api_content_id : int):
     params['contentId'] = api_content_id
     params['contentTypeId'] = api_content_type_id
 
-    total_count = get_total_count(url, params)
-
     info = {
         'phone_number': None,
         'use_time': None,
@@ -199,12 +218,12 @@ def get_travel_place_info(api_content_type_id : int, api_content_id : int):
         'check_out_time': None
     }
 
-    if total_count == 0:
+    items = fetch_api_items(url, params)
+
+    if not items:
         return info
 
-    items = fetch_items(url, params, total_count)
     item = items[0]
-
    
     if api_content_type_id == 12:   # 관광지
         info['phone_number'] = item['infocenter'] or None
@@ -266,7 +285,7 @@ def save_new_travel_place(db : DatabaseHandler,
     
     travel_place.created_at = now
     travel_place.updated_at = now
-    db.insert_travel_place(travel_place)
+    travel_place_db.insert_travel_place(travel_place)
     travel_place.place_id = db.get_last_inserted_id()
 
     # ---------- 썸네일 이미지 저장 ----------
@@ -285,17 +304,17 @@ def sync_travel_place(db : DatabaseHandler,
                       now : datetime):
     travel_place.place_id = saved_place['place_id']
     travel_place.updated_at = now
-    db.update_travel_place(travel_place)
+    travel_place_db.update_travel_place(travel_place)
 
     # ---------- 썸네일 이미지 저장 ----------
     if item['firstimage']:
         sync_thumbnail_travel_image(db, s3, travel_place, item['firstimage'])
     else:
-        thumbnail_image = db.get_travel_thumbnail_image(saved_place['place_id'])
+        thumbnail_image = travel_image_db.get_travel_thumbnail_image(saved_place['place_id'])
         
         if thumbnail_image:
             s3.delete_object(thumbnail_image['object_key'])
-            db.delete_travel_thumbnail_image(saved_place['place_id'])
+            travel_image_db.delete_travel_thumbnail_image(saved_place['place_id'])
         
     sync_travel_detail_images(db, s3, travel_place)
 

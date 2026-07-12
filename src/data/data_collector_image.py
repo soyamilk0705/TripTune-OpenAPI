@@ -1,32 +1,14 @@
 import uuid
 import datetime
-from api.api_handler import *
-from utils.utils import *
-from utils.config import *
+from api.api_handler import logger, fetch_one_page_api_items
+from utils.utils import download_and_compress_image
+from utils.config import BASE_URL, build_image_params
 from db.db_handler import DatabaseHandler
+from db import travel_image_db
 from aws import S3Handler
-from model import *
+from model import TravelPlace, TravelImage
 from urllib.parse import urlparse
 
-
-def get_travel_detail_images(api_content_id : int):
-    '''
-    파라미터로 전달된 지역을 이용해 관광지 데이터를 DB에서 조회한다.
-    DB에서 조회한 관광지 데이터를 이용해 open api에 이미지를 조회 후 데이터를 정제해 반환한다.
-
-    '''
-    url = BASE_URL + '/detailImage1'
-
-    params = build_image_params()
-    params['contentId'] = api_content_id
-
-    total_count = get_total_count(url, params)
-    items = []
-
-    if total_count != 0:
-        items = fetch_one_page_items(url, params)
-
-    return items
 
 
 def save_travel_detail_images(db : DatabaseHandler, s3 : S3Handler, place : TravelPlace):
@@ -44,7 +26,6 @@ def save_travel_detail_images(db : DatabaseHandler, s3 : S3Handler, place : Trav
     logger.info(f'{place.place_name} {len(items)}개 이미지 데이터 저장 완료')
 
 
-
 def sync_travel_detail_images(db : DatabaseHandler, s3 : S3Handler, place : TravelPlace):
     """
     기존에 있던 여행지의 상세 이미지를 삭제 후 신규 저장한다. 
@@ -53,12 +34,12 @@ def sync_travel_detail_images(db : DatabaseHandler, s3 : S3Handler, place : Trav
     items = get_travel_detail_images(place.api_content_id)
 
     # 기존 이미지 삭제
-    detail_images = db.get_travel_detail_images(place.place_id)
+    detail_images = travel_image_db.get_travel_detail_images(place.place_id)
 
     for image in detail_images:
             s3.delete_object(image['object_key'])
 
-    db.delete_travel_detail_images(place.place_id)
+    travel_image_db.delete_travel_detail_images(place.place_id)
 
 
     for item in items:
@@ -69,6 +50,19 @@ def sync_travel_detail_images(db : DatabaseHandler, s3 : S3Handler, place : Trav
     logger.info(f'{place.place_name} {len(items)}개 이미지 데이터 저장 완료')
 
 
+def get_travel_detail_images(api_content_id : int):
+    '''
+    파라미터로 전달된 지역을 이용해 관광지 데이터를 DB에서 조회한다.
+    DB에서 조회한 관광지 데이터를 이용해 open api에 이미지를 조회 후 데이터를 정제해 반환한다.
+
+    '''
+    url = BASE_URL + '/detailImage1'
+
+    params = build_image_params()
+    params['contentId'] = api_content_id
+
+    return fetch_one_page_api_items(url, params)
+    
 
 def sync_thumbnail_travel_image(db : DatabaseHandler, 
                                 s3 : S3Handler, 
@@ -77,11 +71,11 @@ def sync_thumbnail_travel_image(db : DatabaseHandler,
     """
     여행지의 썸네일 이미지를 삭제 후 신규 저장한다.
     """
-    thumbnail_image = db.get_travel_thumbnail_image(place.place_id)
+    thumbnail_image = travel_image_db.get_travel_thumbnail_image(place.place_id)
 
     if thumbnail_image and thumbnail_image['api_file_url'] != image_url:
         s3.delete_object(thumbnail_image['object_key'])
-        db.delete_travel_thumbnail_image(place.place_id)
+        travel_image_db.delete_travel_thumbnail_image(place.place_id)
         save_travel_image(db, s3, place, image_url, True, None)
 
 
@@ -132,7 +126,7 @@ def save_travel_image(db : DatabaseHandler,
         serial_number
     )
 
-    db.insert_travel_image(travel_image)
+    travel_image_db.insert_travel_image(travel_image)
     
     logger.info(f'save_travel_image() - db, s3 이미지 데이터 저장 완료(썸네일 여부 : {is_thumbnail})')
 

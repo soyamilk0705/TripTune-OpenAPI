@@ -1,4 +1,3 @@
-import os
 import requests
 from utils.log_handler import setup_logger
 from datetime import datetime
