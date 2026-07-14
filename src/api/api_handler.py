@@ -8,7 +8,59 @@ from utils.log_handler import setup_logger
 logger = setup_logger()
 
 
-def fetch_api_items(url : str, params : dict):
+def fetch_page_api_items(url : str, params : dict, page_no):
+    """
+    get_json_data 함수를 통해 api 요청해 요청 결과에 item 만 추출해서 리스트에 저장한다.
+    요청 페이지 번호의 데이터를 가져온다.
+
+    *api 요청 결과는 {'response':{'header':{...}, 'body':{'items':'item':[]}}} 으로 구성되어 있다.
+
+    [Parameter]
+    url: open api 요청 url
+    params: open api 요청 파라미터
+    page_no: 페이지 번호
+
+    [Return]
+    items : 요청 결과 중 item 값만 담은 리스트
+    """
+    # 첫 페이지 요청
+    params['pageNo'] = page_no
+    content = get_json_data(url, params)
+
+    body = content['response']['body']
+
+    if body['totalCount'] == 0:
+        return []
+
+    return body['items']['item']
+
+
+def fetch_first_page_api_items(url : str, params : dict):
+    """
+    get_json_data 함수를 통해 api 요청해 요청 결과에 item 만 추출해서 리스트에 저장한다.
+    pageNo = 1 로 설정해 최대 10개의 데이터만 요청하도록 한다.
+
+    *api 요청 결과는 {'response':{'header':{...}, 'body':{'items':'item':[]}}} 으로 구성되어 있다.
+
+    [Parameter]
+    url: open api 요청 url
+    params: open api 요청 파라미터
+
+    [Return]
+    items : 요청 결과 중 item 값만 담은 리스트
+    """
+    params['pageNo'] = 1
+
+    content = get_json_data(url, params)
+    body = content['response']['body']
+
+    if body['totalCount'] == 0:
+        return []
+    
+    return body['items']['item']
+
+
+def fetch_total_api_items(url: str, params: dict):
     """
     get_json_data 함수를 통해 api 요청해 요청 결과에 item 만 추출해서 리스트에 저장한다.
     total_count 로 총 페이지 수(pageNo) 를 계산해 반복문에 이용한다.
@@ -32,7 +84,7 @@ def fetch_api_items(url : str, params : dict):
 
     if total_count == 0:
         return items
-    
+
     items.extend(body['items']['item'])
 
     total_pages = (total_count - 1) // params['numOfRows'] + 1
@@ -48,32 +100,6 @@ def fetch_api_items(url : str, params : dict):
         )
 
     return items
-
-
-
-def fetch_one_page_api_items(url : str, params : dict):
-    """
-    get_json_data 함수를 통해 api 요청해 요청 결과에 item 만 추출해서 리스트에 저장한다.
-    pageNo = 1 로 설정해 최대 10개의 데이터만 요청하도록 한다.
-
-    *api 요청 결과는 {'response':{'header':{...}, 'body':{'items':'item':[]}}} 으로 구성되어 있다.
-
-    [Parameter]
-    url: open api 요청 url
-    params: open api 요청 파라미터
-
-    [Return]
-    items : 요청 결과 중 item 값만 담은 리스트
-    """
-    params['pageNo'] = 1
-
-    content = get_json_data(url, params)
-    body = content['response']['body']
-
-    if body['totalCount'] == 0:
-        return []
-    
-    return body['items']['item']
 
 
 def get_json_data(url : str, params : dict):

@@ -1,7 +1,9 @@
 from datetime import datetime
-from api.api_handler import fetch_api_items
+from math import ceil
+
+from api.api_handler import fetch_page_api_items, fetch_first_page_api_items
 from aws.s3_handler import S3Handler
-from utils.config import BASE_URL, build_params, build_detail_params
+from utils.config import BASE_URL, build_params, build_detail_params, NUM_OF_ROWS
 from utils.log_handler import setup_logger
 from db.db_handler import DatabaseHandler
 from model.travel_place import TravelPlace
@@ -19,7 +21,7 @@ def save_travel_places(db : DatabaseHandler,
                        city : str, 
                        district : str, 
                        target_content_name : str, 
-                       target_count : int):
+                       target_place_count : int):
     """
     파라미터로 전달된 지역 정보와 DB에 저장된 컨텐츠 타입을 이용해 특정 지역의 관광지를 조회하고 저장한다.
     관광지 정보, 해당 관광지에 대한 소개 정보, 썸네일 이미지 등을 저장하는 기능을 한다.
@@ -52,33 +54,46 @@ def save_travel_places(db : DatabaseHandler,
     params['lDongRegnCd'] = korea_area['api_city_code']
     params['lDongSignguCd'] = korea_area['api_district_code']
 
-    items = fetch_api_items(url, params)
+    need_page = ceil(target_place_count / NUM_OF_ROWS)
 
-    total_count = len(items)
-    logger.info(f'총 데이터 개수 - {total_count}개')
+    total_count = 0
+    total_result = {
+        'processed': 0,
+        'insert': 0,
+        'update': 0,
+        'skip': 0
+    }
 
-    if not items:
-        logger.exception(f'{city} {district} {target_content_name} - 조회된 데이터가 없음')
-        return
+    for page_no in range(1, need_page + 1):
+        items = fetch_page_api_items(url, params, page_no)
 
-    result = process_travel_places(
-        db,
-        s3,
-        items,
-        location,
-        content_type,
-        target_count
-    )
+        if not items:
+            logger.exception(f'{city} {district} {target_content_name} - 조회된 데이터가 없음')
+            return
+
+        total_count += len(items)
+
+        result = process_travel_places(
+            db,
+            s3,
+            items,
+            location,
+            content_type,
+            target_place_count
+        )
+
+        for key in total_result:
+            total_result[key] += result[key]
 
     logger.info('======================================================================')
     logger.info(f'''
                 [{city} {district} {target_content_name} 수집 완료] 
                 
                 전체 관광지 : {total_count}개 
-                수집 데이터 : {result['processed']}개
-                신규 저장 : {result['insert']}개
-                수정 데이터 : {result['update']}개
-                변경 없음 : {result['skip']}개
+                수집 데이터 : {total_result['processed']}개
+                신규 저장 : {total_result['insert']}개
+                수정 데이터 : {total_result['update']}개
+                변경 없음 : {total_result['skip']}개
                 '''
     )
     logger.info('======================================================================')
@@ -89,7 +104,7 @@ def process_travel_places(db : DatabaseHandler,
                           items : dict,
                           location : Location, 
                           content_type : dict, 
-                          target_count : int):
+                          target_place_count : int):
 
     """
     1. place 조회(DB)
@@ -116,15 +131,15 @@ def process_travel_places(db : DatabaseHandler,
     
     # 총 저장된 데이터 갯수 확인
     result = {
-        'processed' : 0,
-        'insert' : 0,
-        'update' : 0,
-        'skip' : 0
+        'processed': 0,
+        'insert': 0,
+        'update': 0,
+        'skip': 0
     }
     now = datetime.now()
 
     for item in items:
-        if result['processed'] >= target_count:
+        if result['processed'] > target_place_count:
             break
 
         saved_place = travel_place_db.get_travel_place(db, item['contentid'])
@@ -189,23 +204,24 @@ def get_travel_place_detail(api_content_id : int):
     params['contentId'] = api_content_id
     details = {'description': None, 'homepage': None}
 
-    items = fetch_api_items(url, params)
+    items = fetch_first_page_api_items(url, params)
 
     if not items:
         return details
 
-    for item in items:
-        description = item['overview'].strip()
-        if description in ['', '-']:
-            return details
-        
-        details['description'] = description
+    item = items[0]
 
-        homepage = item['homepage'].strip()
-        if homepage not in ['', '-']:
-            start_index = homepage.find('<a ')
-            if start_index != -1:
-                details['homepage'] = homepage[start_index:]
+    description = item['overview'].strip()
+    if description in ['', '-']:
+        return details
+
+    details['description'] = description
+
+    homepage = item['homepage'].strip()
+    if homepage not in ['', '-']:
+        start_index = homepage.find('<a ')
+        if start_index != -1:
+            details['homepage'] = homepage[start_index:]
 
     return details
 
@@ -230,7 +246,7 @@ def get_travel_place_info(api_content_type_id : int, api_content_id : int):
         'check_out_time': None
     }
 
-    items = fetch_api_items(url, params)
+    items = fetch_first_page_api_items(url, params)
 
     if not items:
         return info

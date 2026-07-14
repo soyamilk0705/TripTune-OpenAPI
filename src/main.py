@@ -30,7 +30,8 @@ def main():
     s3 = S3Handler(s3_region_name, s3_bucket_name, aws_access_key_id, aws_secret_access_key)
     
     try:
-        save_travel_places(db, s3, '서울특별시', '강남구', '관광지', 1)
+        # target_place_count 는 10 단위로 요청
+        save_travel_places(db, s3, '서울특별시', '강남구', '관광지', 10)
 
 
     finally:

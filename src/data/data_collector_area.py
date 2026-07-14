@@ -1,4 +1,4 @@
-from api.api_handler import fetch_api_items
+from api.api_handler import fetch_total_api_items
 from utils.log_handler import setup_logger
 from db.db_handler import DatabaseHandler
 from aws.s3_handler import S3Handler
@@ -29,7 +29,7 @@ def korea_city_code(db : DatabaseHandler, secret_key : str, base_url : str):
 
     # DB 에 저장된 나라 id 조회
     country_id = area_db.get_country_id(db, '대한민국')['country_id']
-    items = fetch_api_items(url, params)
+    items = fetch_total_api_items(url, params)
 
     for item in items:
         api_city_code = item['code']
@@ -70,9 +70,8 @@ def korea_district_code(db : DatabaseHandler, secret_key : str, base_url : str):
     for city in cities:
         city_id = city['city_id']
         params['lDongRegnCd'] = city['api_city_code']
-        
-        # 전체 갯수 조회
-        items = fetch_api_items(url, params)
+
+        items = fetch_total_api_items(url, params)
 
         for item in items:
             api_district_code = item['code']

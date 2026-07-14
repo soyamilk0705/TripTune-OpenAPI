@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from api.api_handler import logger, fetch_one_page_api_items
+from api.api_handler import logger, fetch_first_page_api_items
 from utils.utils import download_and_compress_image
 from utils.config import BASE_URL, build_image_params
 from db.db_handler import DatabaseHandler
@@ -101,7 +101,7 @@ def get_travel_detail_images(api_content_id : int):
     params = build_image_params()
     params['contentId'] = api_content_id
 
-    return fetch_one_page_api_items(url, params)
+    return fetch_first_page_api_items(url, params)
     
 
 def sync_thumbnail_travel_image(db : DatabaseHandler, 
