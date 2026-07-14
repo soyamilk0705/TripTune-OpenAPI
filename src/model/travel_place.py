@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import Optional
 from datetime import datetime
-from model.location import *
+from model.location import Location
+
 
 @dataclass
 class TravelPlace:

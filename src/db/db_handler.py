@@ -9,7 +9,8 @@ class DatabaseHandler:
             database=db,
             port=port,
             charset='utf8',
-            cursorclass=pymysql.cursors.DictCursor
+            cursorclass=pymysql.cursors.DictCursor,
+            autocommit=False
         )
         self.cursor = self.conn.cursor()
 
@@ -28,22 +29,22 @@ class DatabaseHandler:
 
     def execute_insert(self, query, params):
         self.cursor.execute(query, params)
-        self.conn.commit()
-
 
     def execute_update(self, query, params):
         self.cursor.execute(query, params)
-        self.conn.commit()
 
     def execute_delete(self, query, params):
         self.cursor.execute(query, params)
-        self.conn.commit()
-
 
     def get_last_inserted_id(self):
         return self.cursor.lastrowid
-    
 
     def close(self):
         self.conn.close()
+
+    def commit(self):
+        self.conn.commit()
+
+    def rollback(self):
+        self.conn.rollback()
     

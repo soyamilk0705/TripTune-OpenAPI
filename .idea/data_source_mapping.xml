@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourcePerFileMappings">
+    <file url="file://$PROJECT_DIR$/src/db/content_type_db.py" value="ab8f57f6-c43f-443c-a568-f3e2634965ba" />
+    <file url="file://$PROJECT_DIR$/src/db/travel_image_db.py" value="ab8f57f6-c43f-443c-a568-f3e2634965ba" />
+    <file url="file://$PROJECT_DIR$/src/db/travel_place_db.py" value="ab8f57f6-c43f-443c-a568-f3e2634965ba" />
+  </component>
+</project>

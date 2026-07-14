@@ -1,8 +1,8 @@
+import time
+from db import travel_place_db, travel_image_db
 from aws.s3_handler import S3Handler
 from utils.log_handler import setup_logger
 from db.db_handler import DatabaseHandler
-import time
-from db import travel_place_db, travel_image_db
 
 logger = setup_logger()
 
@@ -18,9 +18,9 @@ def delete_ambiguous_description_data(db : DatabaseHandler, s3 : S3Handler):
         try:
             try:
                 s3.delete_object(s3_object_key)
-            except:
-                logger.error(f'S3 삭제 실패 (place_id={place_id}): {e}')
-                break
+            except Exception:
+                logger.exception(f'S3 삭제 실패 (place_id={place_id})')
+                continue
 
             travel_image_db.delete_travel_image(db, image_id)
 
@@ -28,6 +28,9 @@ def delete_ambiguous_description_data(db : DatabaseHandler, s3 : S3Handler):
 
             travel_place_db.delete_travel_place(db, place_id)
 
+            db.commit()
+
             logger.info(f'(place_id={place_id}) 여행지 데이터 삭제 완료')
         except Exception:
+            db.rollback()
             logger.exception(f'삭제 중 오류 발생 (place_id={place_id})')

@@ -1,24 +1,26 @@
-from .data_collector_image import *
-from api.api_handler import *
-from utils.utils import *
+from datetime import datetime
+from api.api_handler import fetch_api_items
+from aws.s3_handler import S3Handler
+from utils.config import BASE_URL, build_params, build_detail_params
 from utils.log_handler import setup_logger
-from utils.config import *
 from db.db_handler import DatabaseHandler
 from model.travel_place import TravelPlace
 from model.location import Location
 from db import travel_place_db, area_db, content_type_db, travel_image_db
-
+from utils.utils import convert_to_datetime
+from data.data_collector_image import save_travel_image, sync_thumbnail_travel_image, sync_travel_detail_images, \
+    save_travel_detail_images
 
 logger = setup_logger()
 
 
-def save_travel_places(db : DatabaseHandler, 
+def save_travel_places(db : DatabaseHandler,
                        s3 : S3Handler, 
                        city : str, 
                        district : str, 
                        target_content_name : str, 
                        target_count : int):
-    '''
+    """
     파라미터로 전달된 지역 정보와 DB에 저장된 컨텐츠 타입을 이용해 특정 지역의 관광지를 조회하고 저장한다.
     관광지 정보, 해당 관광지에 대한 소개 정보, 썸네일 이미지 등을 저장하는 기능을 한다.
     이미지 파일의 경우 S3에 이미지 파일로 저장된다.
@@ -29,8 +31,8 @@ def save_travel_places(db : DatabaseHandler,
     - /detailCommon1
     - /detailIntro1
     - /detailImage1
-    
-    '''
+
+    """
     url = BASE_URL + '/areaBasedList2'
     params = build_params()
 
@@ -38,9 +40,8 @@ def save_travel_places(db : DatabaseHandler,
     korea_area = area_db.get_area(db, '대한민국', city, district)
 
     if not korea_area:
-        logger.error(f'지역 정보가 존재하지 않습니다 - {city}, {district}')
+        logger.exception(f'{city}, {district} - 지역 정보 존재 안함')
         return
-
 
     # 컨텐츠 타입 조회
     content_type = content_type_db.get_api_content_type(db, target_content_name)
@@ -57,7 +58,7 @@ def save_travel_places(db : DatabaseHandler,
     logger.info(f'총 데이터 개수 - {total_count}개')
 
     if not items:
-        logger.info(f'[{city} {district} {target_content_name}] 조회된 관광지 데이터가 없습니다.')
+        logger.exception(f'{city} {district} {target_content_name} - 조회된 데이터가 없음')
         return
 
     result = process_travel_places(
@@ -80,6 +81,7 @@ def save_travel_places(db : DatabaseHandler,
                 변경 없음 : {result['skip']}개
                 '''
     )
+    logger.info('======================================================================')
 
 
 def process_travel_places(db : DatabaseHandler, 
@@ -88,8 +90,8 @@ def process_travel_places(db : DatabaseHandler,
                           location : Location, 
                           content_type : dict, 
                           target_count : int):
-    
-    '''
+
+    """
     1. place 조회(DB)
     2. API 수정시간 비교
     3. 변경된 place거나 신규인 경우 상세 정보 조회(API)
@@ -106,11 +108,11 @@ def process_travel_places(db : DatabaseHandler,
         5.2 api_updated_at != modifiedtime
             5.2.1. place update
             5.2.2. 썸네일 비교
-                - 다름 → 기존 삭제 후 새로 저장   
+                - 다름 → 기존 삭제 후 새로 저장
             5.2.3 상세 이미지 조회(API)
                 - 기존 상세 이미지 삭제
                 - 상세 이미지 저장
-    '''
+    """
     
     # 총 저장된 데이터 갯수 확인
     result = {
@@ -129,24 +131,38 @@ def process_travel_places(db : DatabaseHandler,
 
         api_updated_at = convert_to_datetime(item['modifiedtime'])
 
-        # 변경없는 데이터
+        # 데이터 변경되지 않았으면 pass
         if saved_place and saved_place['api_updated_at'] == api_updated_at:
             result['skip'] += 1
-            continue
-        
-        # ---------- 관광지 소개 정보 조회 ----------
-        details = get_travel_place_detail(item['contentid'])
-        if details['description'] is None:
+            logger.info(f'[SKIP] {saved_place['place_name']}({item['contentid']}) - 여행지 데이터 변경 없음')
             continue
 
-        # ---------- 관광지 기본 정보 조회 ----------
+
+        logger.info(f'[START] {item['title']}({item['contentid']}) 데이터 수집 시작')
+        # ----------------------------
+        # 관광지 소개 정보 조회
+        # ----------------------------
+        details = get_travel_place_detail(item['contentid'])
+        logger.info(f'[END] {item['title']}({item['contentid']}) 관광지 설명 데이터 조회 완료')
+
+        if details['description'] is None:
+            logger.info(f'[SKIP] {item['title']}({item['contentid']}) 관광지 설명 데이터 없어 데이터 수집 제외')
+            continue
+
+        # ----------------------------
+        # 관광지 기본 정보 조회
+        # ----------------------------
         info = get_travel_place_info(
             content_type['api_content_type_id'], 
             item['contentid']
         )
+        logger.info(f'[END] {item['title']}({item['contentid']})  관광지 전화번호, 이용시간 데이터 조회 완료')
 
-        travel_place = create_travel_place(item, details, info, location, content_type) 
-       
+        travel_place = create_travel_place(item, details, info, location, content_type)
+
+        # ----------------------------
+        # 여행지 신규 저장 or 갱신
+        # ----------------------------
         if saved_place is None:
             save_new_travel_place(db, s3, item, travel_place, now)
             result['insert'] += 1
@@ -155,19 +171,18 @@ def process_travel_places(db : DatabaseHandler,
             result['update'] += 1
         
         result['processed'] += 1
-        logger.info('-------------------------------------------------------------------')
-        logger.info(f'{result['processed']} 개 데이터 저장 완료')
+        logger.info(f'[END] process_travel_places() 종료')
     
     return result
 
 
 
 def get_travel_place_detail(api_content_id : int):
-    '''
+    """
     특정 관광지에 대한 소개 정보(description)와 홈페이지 정보(<a> 태그로 시작하는 홈페이지 주소)를 조회하고 저장한다.
     저장 위치 : travel_place.description
 
-    '''
+    """
     url = BASE_URL + '/detailCommon2'
     params = build_detail_params()
 
@@ -181,29 +196,26 @@ def get_travel_place_detail(api_content_id : int):
 
     for item in items:
         description = item['overview'].strip()
-
         if description in ['', '-']:
             return details
         
         details['description'] = description
 
         homepage = item['homepage'].strip()
-       
         if homepage not in ['', '-']:
             start_index = homepage.find('<a ')
             if start_index != -1:
                 details['homepage'] = homepage[start_index:]
 
-    logger.info(f'[get_travel_place_detail()] {api_content_id} 관광지 설명 데이터 조회 완료')
     return details
 
 
 def get_travel_place_info(api_content_type_id : int, api_content_id : int):
-    '''
+    """
     콘텐츠 타입에 따른 관광지 정보(전화번호, 이용시간, 체크인 시간, 체크아웃 시간)를 조회한다.
     저장 위치 : travel_place.phone_number, travel_place.use_time, travel_place.check_in_time, travel_place.check_out_time
 
-    '''
+    """
 
     url = BASE_URL + '/detailIntro2'
     params = build_params()
@@ -245,8 +257,6 @@ def get_travel_place_info(api_content_type_id : int, api_content_id : int):
         info['phone_number'] = item['infocenterfood'] or None
         info['use_time'] = item['opentimefood'] or None 
 
-
-    logger.info(f'[get_travel_place_info()] {api_content_id} 관광지 전화번호, 이용시간 데이터 조회 완료')
     return info
 
 
@@ -282,20 +292,55 @@ def save_new_travel_place(db : DatabaseHandler,
                           item : dict,
                           travel_place : TravelPlace,
                           now : datetime):
-    
-    travel_place.created_at = now
-    travel_place.updated_at = now
-    travel_place_db.insert_travel_place(db, travel_place)
-    travel_place.place_id = db.get_last_inserted_id()
+    """
+    신규 여행지, 썸네일 이미지, 상세 이미지를 저장한다.
+    예외 발생 시 DB를 롤백 후 s3에 저장된 이미지를 삭제한다.
+    """
 
-    logger.info(f'[save_new_travel_place] {travel_place.place_name} 여행지 DB 신규 저장')
+    # s3에 업로드한 이미지들의 s3_object_key
+    uploaded_keys = []
 
-    # ---------- 썸네일 이미지 저장 ----------
-    if item['firstimage']:
-        save_travel_image(db, s3, travel_place, item['firstimage'], True)
+    try:
+        logger.info('-------------------------------------------------------------------')
+        logger.info(f'[START] {travel_place.place_name}({travel_place.api_content_id}) 여행지 신규 저장 시작')
+        travel_place.created_at = now
+        travel_place.updated_at = now
 
-    save_travel_detail_images(db, s3, travel_place)
+        travel_place_db.insert_travel_place(db, travel_place)
+        travel_place.place_id = db.get_last_inserted_id()
 
+        # ----------------------------
+        # 신규 썸네일 저장
+        # ----------------------------
+        if item['firstimage']:
+            key = save_travel_image(
+                db,
+                s3,
+                travel_place,
+                item['firstimage'],
+                True,
+                None
+            )
+            uploaded_keys.append(key)
+
+        # ----------------------------
+        # 상세 이미지 저장
+        # ----------------------------
+        uploaded_keys.extend(save_travel_detail_images(db, s3, travel_place))
+
+        db.commit()
+
+        logger.info('-------------------------------------------------------------------')
+        logger.info(f'[END] {travel_place.place_name}({travel_place.api_content_id}) 여행지 신규 저장 완료')
+
+    except Exception:
+        logger.exception(f'[ERROR] {travel_place.place_id}({travel_place.api_content_id}) 데이터 신규 저장 중 예외 발생으로 rollback')
+        db.rollback()
+
+        for key in uploaded_keys:
+            s3.delete_object(key)
+
+        raise
 
 
 def sync_travel_place(db : DatabaseHandler,
@@ -304,22 +349,60 @@ def sync_travel_place(db : DatabaseHandler,
                       travel_place : TravelPlace,
                       saved_place : dict,
                       now : datetime):
+    """
+    API 에서 받은 여행지 데이터에 변경이 있을 시 기존 DB에 저장된 데이터를 수정한다.
+    썸네일 이미지 변경이 있을 시에만 수정한다.
+    상세 이미지는 신규 저장 후 기존 이미지를 삭제한다.
+    예외 발생 시 DB를 롤백하고 s3 이미지를 삭제한다.
+    """
     travel_place.place_id = saved_place['place_id']
     travel_place.updated_at = now
-    travel_place_db.update_travel_place(db, travel_place)
-    
-    logger.info(f'[sync_travel_place] {travel_place.place_name} 여행지 DB 수정')
 
-    # ---------- 썸네일 이미지 저장 ----------
-    if item['firstimage']:
-        sync_thumbnail_travel_image(db, s3, travel_place, item['firstimage'])
-    else:
-        thumbnail_image = travel_image_db.get_travel_thumbnail_image(db, saved_place['place_id'])
-        
-        if thumbnail_image:
-            s3.delete_object(thumbnail_image['s3_object_key'])
-            travel_image_db.delete_travel_thumbnail_image(db, saved_place['place_id'])
-        
-    sync_travel_detail_images(db, s3, travel_place)
+    uploaded_keys = []
+
+    try:
+        logger.info('-------------------------------------------------------------------')
+        logger.info(f'[START] {travel_place.place_name}({travel_place.api_content_id}) 여행지 갱신 시작')
+        travel_place_db.update_travel_place(db, travel_place)
+
+        # ----------------------------
+        # 썸네일 이미지 갱신
+        # ----------------------------
+        if item['firstimage']:
+            key = sync_thumbnail_travel_image(
+                db,
+                s3,
+                travel_place,
+                item['firstimage']
+            )
+
+            if key:
+                uploaded_keys.append(key)
+        else:
+            # API 에서 썸네일 이미지가 없는 경우 기존 저장된 데이터 삭제
+            thumbnail_image = travel_image_db.get_travel_thumbnail_image(db, saved_place['place_id'])
+
+            if thumbnail_image:
+                travel_image_db.delete_travel_thumbnail_image(db, thumbnail_image['travel_image_id'])
+                s3.delete_object(thumbnail_image['s3_object_key'])
+
+        # ----------------------------
+        # 상세 이미지 갱신: 신규 저장 후 삭제
+        # ----------------------------
+        detail_uploaded_keys = sync_travel_detail_images(db, s3, travel_place)
+        uploaded_keys.extend(detail_uploaded_keys)
+
+        db.commit()
+        logger.info(f'[END] {travel_place.place_name}({travel_place.api_content_id}) 여행지 갱신 완료')
+
+    except Exception:
+        logger.exception(f'[ERROR] {travel_place.place_id}({travel_place.api_content_id}) 데이터 갱신 중 예외 발생으로 rollback')
+        db.rollback()
+
+        # 이번 작업에서 새로 업로드한 이미지 삭제
+        for key in uploaded_keys:
+            s3.delete_object(key)
+
+        raise
 
 

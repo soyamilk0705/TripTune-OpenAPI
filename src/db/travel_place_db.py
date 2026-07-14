@@ -11,11 +11,11 @@ def travel_place_exists(db : DatabaseHandler, api_content_id : int):
 
 
 def get_travel_place(db : DatabaseHandler, api_content_id : int):
-    query = """
+    query = '''
         SELECT *
         FROM travel_place
         WHERE api_content_id = %s
-    """
+    '''
     return db.execute_fetch_one(query, (api_content_id,))
 
 
@@ -128,16 +128,16 @@ def update_travel_place(db : DatabaseHandler, travel_place : TravelPlace):
 
 
 def delete_travel_place(db : DatabaseHandler, place_id : int):
-    query = """
+    query = '''
         DELETE FROM travel_place 
         WHERE place_id = %s
-    """
+    '''
     db.execute_delete(query, (place_id,))
 
 
 def delete_travel_place_by_district(db : DatabaseHandler, district_id : int):
-    query = """
+    query = '''
         DELETE FROM travel_place
         WHERE travel_place.district_id = %s
-    """
+    '''
     db.cursor.execute(query, (district_id,))

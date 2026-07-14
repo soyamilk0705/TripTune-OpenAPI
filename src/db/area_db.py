@@ -35,10 +35,10 @@ def get_cities(db : DatabaseHandler):
         SELECT city_id, api_city_code 
         FROM city
     '''
-    return db.execute_select_all(query)
+    return db.execute_fetch_all(query)
 
 
-def get_country_id(db : DatabaseHandler, country_name : int):
+def get_country_id(db : DatabaseHandler, country_name : str):
     query = '''
         SELECT country_id 
         FROM country 
@@ -56,6 +56,7 @@ def insert_city(db : DatabaseHandler,
         VALUES (%s, %s, %s)
     '''
     db.execute_insert(query, (country_id, api_city_code, city_name))
+    db.commit()
 
 def insert_district(db : DatabaseHandler, 
                     city_id : int, 
@@ -66,6 +67,7 @@ def insert_district(db : DatabaseHandler,
         VALUES (%s, %s, %s)
     '''
     db.execute_insert(query, (city_id, api_district_code, district_name,))
+    db.commit()
 
 
 def delete_district(db : DatabaseHandler, district_id : int):
