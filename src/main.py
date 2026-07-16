@@ -31,7 +31,13 @@ def main():
     
     try:
         # target_place_count 는 10 단위로 요청
-        save_travel_places(db, s3, '서울특별시', '강남구', '관광지', 10)
+        # 관광지
+        # 문화시설
+        # 레포츠
+        # 숙박
+        # 쇼핑
+        # 음식점
+        save_travel_places(db, s3, '전남광주통합특별시', '북구', '숙박', 30)
 
 
     finally:

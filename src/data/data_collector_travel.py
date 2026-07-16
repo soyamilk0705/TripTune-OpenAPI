@@ -54,9 +54,6 @@ def save_travel_places(db : DatabaseHandler,
     params['lDongRegnCd'] = korea_area['api_city_code']
     params['lDongSignguCd'] = korea_area['api_district_code']
 
-    need_page = ceil(target_place_count / NUM_OF_ROWS)
-
-    total_count = 0
     total_result = {
         'processed': 0,
         'insert': 0,
@@ -64,22 +61,33 @@ def save_travel_places(db : DatabaseHandler,
         'skip': 0
     }
 
+    # ==========================
+    # 첫 페이지 요청
+    # ==========================
+    items, total_count = fetch_page_api_items(url, params, 1)
+
+    if not items:
+        logger.info(f'{city} {district} {target_content_name} - 조회된 데이터가 없음')
+        return
+
+    # 실제 필요한 페이지만 계산
+    need_page = ceil(min(total_count, target_place_count) / NUM_OF_ROWS)
+
+    # ==========================
+    # 필요한 페이지 요청
+    # ==========================
     for page_no in range(1, need_page + 1):
-        items = fetch_page_api_items(url, params, page_no)
 
-        if not items:
-            logger.exception(f'{city} {district} {target_content_name} - 조회된 데이터가 없음')
-            return
-
-        total_count += len(items)
+        # 첫 페이지는 이미 요청했으므로 재요청 안함
+        if page_no != 1:
+            items, _ = fetch_page_api_items(url, params, page_no)
 
         result = process_travel_places(
             db,
             s3,
             items,
             location,
-            content_type,
-            target_place_count
+            content_type
         )
 
         for key in total_result:
@@ -103,8 +111,7 @@ def process_travel_places(db : DatabaseHandler,
                           s3 : S3Handler,
                           items : dict,
                           location : Location, 
-                          content_type : dict, 
-                          target_place_count : int):
+                          content_type : dict):
 
     """
     1. place 조회(DB)
@@ -139,9 +146,6 @@ def process_travel_places(db : DatabaseHandler,
     now = datetime.now()
 
     for item in items:
-        if result['processed'] > target_place_count:
-            break
-
         saved_place = travel_place_db.get_travel_place(db, item['contentid'])
 
         api_updated_at = convert_to_datetime(item['modifiedtime'])

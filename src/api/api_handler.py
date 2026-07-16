@@ -23,16 +23,17 @@ def fetch_page_api_items(url : str, params : dict, page_no):
     [Return]
     items : 요청 결과 중 item 값만 담은 리스트
     """
-    # 첫 페이지 요청
     params['pageNo'] = page_no
     content = get_json_data(url, params)
 
     body = content['response']['body']
+    total_count = body.get('totalCount', 0)
+    items = body.get('items')
 
-    if body['totalCount'] == 0:
-        return []
+    if total_count == 0 or not items:
+        return [], total_count
 
-    return body['items']['item']
+    return items['item'], total_count
 
 
 def fetch_first_page_api_items(url : str, params : dict):
@@ -53,11 +54,12 @@ def fetch_first_page_api_items(url : str, params : dict):
 
     content = get_json_data(url, params)
     body = content['response']['body']
+    items = body.get('items')
 
-    if body['totalCount'] == 0:
+    if body.get('totalCount', 0) == 0 or not items:
         return []
     
-    return body['items']['item']
+    return items['item']
 
 
 def fetch_total_api_items(url: str, params: dict):
