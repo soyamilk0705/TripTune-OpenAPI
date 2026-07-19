@@ -111,49 +111,94 @@ def get_json_data(url : str, params : dict):
 
     * open api 요청 결과가 XML 인 경우 에러 페이지이기 때문에 그에 따른 try-except를 추가하였다.
 
-
     [Parameter]
     url: open api 요청 url
     params: open api 요청 파라미터
     """
     encoding_params = urllib.parse.urlencode(params, safe='#\':()+=%,')
 
-    response = requests.get(url, params=encoding_params)
-    content_type = response.headers.get('Content-Type')
 
-    if response.status_code == 200:
-        if 'application/json' in content_type:
-            try:
-                data = response.json()
-                print(data)
-
-                if 'response' in data and 'body' in data['response']:
-                    return data
-                elif 'resultMsg' in data and 'resultCode' in data:
-                    logger.error(f'get_json_data() - 에러 코드 : {data["resultCode"]}, 에러 메시지: {data["resultMsg"]}')
-                    sys.exit(1)
-                else:
-                    logger.error('get_json_data() - 예상치 못한 응답 구조 발생: {data}')
-                    sys.exit(1)
-
-            except ValueError as e:
-                logger.error(f'get_json_data() - JSON 파싱 오류: {e}')
-                sys.exit(1)
-
-        elif 'application/xml' in content_type or 'text/xml' in content_type:
-            try:
-                root = ET.fromstring(response.text)
-                logger.error(f'get_json_data() - 에러 코드 : {root.find(".//returnReasonCode").text}\n에러 메시지 : {root.find(".//returnAuthMsg").text}')
-                sys.exit(1)
-
-            except ET.ParseError as e:
-                logger.error('get_json_data() - XML 파싱 오류 : {e}')
-                sys.exit(1)
-        else:
-            logger.error(f'get_json_data() - 알 수 없는 컨텐츠 타입 : {content_type}')
-            sys.exit(1)
-    else:
-        logger.error(f'get_json_data() - 요청 실패: 상태코드 {response.status_code}\n컨텐츠 타입 : {content_type}')
+    try:
+        response = requests.get(url, params=encoding_params)
+    except requests.exceptions.RequestException:
+        logger.exception(
+            f'get_json_data() - API 요청 중 예외 발생\n'
+            f'URL : {url}\n'
+            f'Params : {encoding_params}'
+        )
         sys.exit(1)
+
+    content_type = response.headers.get('Content-Type', '')
+
+    if response.status_code != 200:
+        logger.error(
+            f'get_json_data() - API 요청 실패\n'
+            f'상태 코드 : {response.status_code}\n'
+            f'컨텐츠 타입 : {content_type}\n'
+            f'요청 URL : {response.request.url}\n'
+            f'응답 내용 :\n{response.text}'
+        )
+        sys.exit(1)
+
+    if 'application/json' in content_type:
+        try:
+            data = response.json()
+            print(data)
+        except ValueError as e:
+            logger.error(
+                f'get_json_data() - JSON 파싱 실패\n'
+                f'요청 URL : {response.request.url}\n'
+                f'에러 : {e}\n'
+                f'응답 내용 :\n{response.text}'
+            )
+            sys.exit(1)
+
+        if 'response' in data and 'body' in data['response']:
+            return data
+
+        if 'resultMsg' in data and 'resultCode' in data:
+            logger.error(
+                f'get_json_data() - API 오류 응답\n'
+                f'에러 코드 : {data["resultCode"]}\n'
+                f'에러 메시지 : {data["resultMsg"]}'
+            )
+            sys.exit(1)
+
+        logger.error(
+            f'get_json_data() - 예상하지 못한 JSON 응답\n'
+            f'요청 URL : {response.request.url}\n'
+            f'응답 데이터 : {data}'
+        )
+        sys.exit(1)
+
+
+    if 'application/xml' in content_type or 'text/xml' in content_type:
+        try:
+            root = ET.fromstring(response.text)
+
+            reason_code = root.findtext('.//returnReasonCode')
+            auth_msg = root.findtext('.//returnAuthMsg')
+
+            logger.error(
+                f'get_json_data() - API 오류 응답(XML)\n'
+                f'에러 코드 : {reason_code}\n'
+                f'에러 메시지 : {auth_msg}'
+            )
+            sys.exit(1)
+
+        except ET.ParseError as e:
+            logger.error(
+                f'get_json_data() - XML 파싱 실패\n'
+                f'에러 : {e}\n'
+                f'응답 내용 :\n{response.text}'
+            )
+            sys.exit(1)
+
+    logger.error(
+        f'get_json_data() - 지원하지 않는 응답 형식\n'
+        f'컨텐츠 타입 : {content_type}\n'
+        f'응답 내용 :\n{response.text}'
+    )
+    sys.exit(1)
 
 

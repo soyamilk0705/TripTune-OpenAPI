@@ -37,7 +37,7 @@ def main():
         # 숙박
         # 쇼핑
         # 음식점
-        save_travel_places(db, s3, '전남광주통합특별시', '북구', '숙박', 30)
+        save_travel_places(db, s3, '서울특별시', '중랑구', '관광지', 30)
 
 
     finally:

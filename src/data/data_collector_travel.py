@@ -165,6 +165,7 @@ def process_travel_places(db : DatabaseHandler,
         logger.info(f'[END] {item['title']}({item['contentid']}) 관광지 설명 데이터 조회 완료')
 
         if details['description'] is None:
+            result['skip'] += 1
             logger.info(f'[SKIP] {item['title']}({item['contentid']}) 관광지 설명 데이터 없어 데이터 수집 제외')
             continue
 
