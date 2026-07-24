@@ -55,7 +55,6 @@ def save_travel_places(db : DatabaseHandler,
     params['lDongSignguCd'] = korea_area['api_district_code']
 
     total_result = {
-        'processed': 0,
         'insert': 0,
         'update': 0,
         'skip': 0
@@ -70,37 +69,52 @@ def save_travel_places(db : DatabaseHandler,
         logger.info(f'{city} {district} {target_content_name} - 조회된 데이터가 없음')
         return
 
-    # 실제 필요한 페이지만 계산
-    need_page = ceil(min(total_count, target_place_count) / NUM_OF_ROWS)
+    # 전체 관광지 기준 마지막 페이지 계산
+    last_page = ceil(total_count / NUM_OF_ROWS)
+    saved_count = 0
 
     # ==========================
     # 필요한 페이지 요청
     # ==========================
-    for page_no in range(1, need_page + 1):
+    for page_no in range(1, last_page + 1):
+
+        if saved_count >= target_place_count:
+            logger.info(f'목표 저장 개수 {target_place_count} 개 달성으로 조기 종료')
+            break
 
         # 첫 페이지는 이미 요청했으므로 재요청 안함
         if page_no != 1:
             items, _ = fetch_page_api_items(url, params, page_no)
+            if not items:
+                break
+
+        # 남은 데이터 갯수
+        remain_count = target_place_count - saved_count
 
         result = process_travel_places(
             db,
             s3,
             items,
             location,
-            content_type
+            content_type,
+            remain_count
         )
 
         for key in total_result:
             total_result[key] += result[key]
 
+        # 실제 변경/저장된 개수
+        saved_count += (result['insert'] + result['update'])
+
     logger.info('======================================================================')
     logger.info(f'''
                 [{city} {district} {target_content_name} 수집 완료] 
                 
-                전체 관광지 : {total_count}개 
-                수집 데이터 : {total_result['processed']}개
+                전체 관광지 : {total_count}개
+                목표 저장 : {target_place_count}개
+                저장/수정 완료 : {saved_count}개
                 신규 저장 : {total_result['insert']}개
-                수정 데이터 : {total_result['update']}개
+                수정 : {total_result['update']}개
                 변경 없음 : {total_result['skip']}개
                 '''
     )
@@ -111,7 +125,8 @@ def process_travel_places(db : DatabaseHandler,
                           s3 : S3Handler,
                           items : dict,
                           location : Location, 
-                          content_type : dict):
+                          content_type : dict,
+                          remain_count : int):
 
     """
     1. place 조회(DB)
@@ -138,7 +153,6 @@ def process_travel_places(db : DatabaseHandler,
     
     # 총 저장된 데이터 갯수 확인
     result = {
-        'processed': 0,
         'insert': 0,
         'update': 0,
         'skip': 0
@@ -146,8 +160,11 @@ def process_travel_places(db : DatabaseHandler,
     now = datetime.now()
 
     for item in items:
-        saved_place = travel_place_db.get_travel_place(db, item['contentid'])
+        # 목표 갯수 달성
+        if remain_count <= 0:
+            break
 
+        saved_place = travel_place_db.get_travel_place(db, item['contentid'])
         api_updated_at = convert_to_datetime(item['modifiedtime'])
 
         # 데이터 변경되지 않았으면 pass
@@ -158,6 +175,7 @@ def process_travel_places(db : DatabaseHandler,
 
 
         logger.info(f'[START] {item['title']}({item['contentid']}) 데이터 수집 시작')
+
         # ----------------------------
         # 관광지 소개 정보 조회
         # ----------------------------
@@ -189,8 +207,8 @@ def process_travel_places(db : DatabaseHandler,
         else: 
             sync_travel_place(db, s3, item, travel_place, saved_place, now)
             result['update'] += 1
-        
-        result['processed'] += 1
+
+        remain_count -= 1
         logger.info(f'[END] process_travel_places() 종료')
     
     return result

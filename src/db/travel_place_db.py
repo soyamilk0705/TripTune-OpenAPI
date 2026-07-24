@@ -91,7 +91,8 @@ def insert_travel_place(db : DatabaseHandler, travel_place : TravelPlace):
 def update_travel_place(db : DatabaseHandler, travel_place : TravelPlace):
     query = '''
         UPDATE travel_place
-        SET place_name = %s,
+        SET content_type_id = %s,
+            place_name = %s,
             address = %s,
             api_created_at = %s,
             api_updated_at = %s,
@@ -109,6 +110,7 @@ def update_travel_place(db : DatabaseHandler, travel_place : TravelPlace):
     '''
 
     db.execute_update(query, (
+        travel_place.content_type_id,
         travel_place.place_name,
         travel_place.address,
         travel_place.api_created_at,
