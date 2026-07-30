@@ -1,17 +1,29 @@
+from sshtunnel import SSHTunnelForwarder
 import pymysql
 
 class DatabaseHandler:
-    def __init__(self, host, user, password, db, port):
+    def __init__(self, db_host, db_user, db_password, db, db_port,
+                 ssh_host, ssh_port, ssh_username, ssh_pkey):
+        self.tunnel = SSHTunnelForwarder(
+            (ssh_host, ssh_port),
+            ssh_username=ssh_username,
+            ssh_pkey=ssh_pkey,
+            remote_bind_address=(db_host, db_port)
+        )
+
+        self.tunnel.start()
+
         self.conn = pymysql.connect(
-            host=host,
-            user=user,
-            password=password,
+            host=db_host,
+            user=db_user,
+            password=db_password,
             database=db,
-            port=port,
+            port=self.tunnel.local_bind_port,
             charset='utf8',
             cursorclass=pymysql.cursors.DictCursor,
             autocommit=False
         )
+
         self.cursor = self.conn.cursor()
 
     # ---------------------------------------------------------
@@ -40,7 +52,9 @@ class DatabaseHandler:
         return self.cursor.lastrowid
 
     def close(self):
+        self.cursor.close()
         self.conn.close()
+        self.tunnel.stop()
 
     def commit(self):
         self.conn.commit()

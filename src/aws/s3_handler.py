@@ -5,11 +5,7 @@ from utils.log_handler import setup_logger
 logger = setup_logger()
 
 class S3Handler:
-    def __init__(self, 
-                 region_name : str, 
-                 bucket_name : str, 
-                 aws_access_key_id : str, 
-                 aws_secret_access_key : str):
+    def __init__(self, region_name,bucket_name, aws_access_key_id, aws_secret_access_key):
         try:
             # 파일 업로드/삭제용
             self.s3_client = boto3.client(

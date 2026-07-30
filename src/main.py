@@ -15,19 +15,46 @@ def main():
     db_name = os.getenv('DB_NAME')
     db_port = int(os.getenv('DB_PORT'))
 
+    # ssh
+    ssh_host = os.getenv('SSH_HOST')
+    ssh_port = int(os.getenv('SSH_PORT'))
+    ssh_username = os.getenv('SSH_USERNAME')
+    ssh_pkey = os.getenv('SSH_PKEY')
+
     # s3
     s3_region_name = os.getenv('S3_REGION')
     s3_bucket_name = os.getenv('S3_BUCKET_NAME')
     aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID')
     aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY')
 
-    if not all([db_host, db_user, db_password, db_name, db_port, s3_region_name, s3_bucket_name, aws_access_key_id, aws_secret_access_key]):
-        print('환경 변수 불러오기 실패')
-        return None
+
+    db_config = [db_host, db_user, db_password, db_name, db_port]
+    ssh_config = [ssh_host, ssh_port, ssh_username, ssh_pkey]
+    s3_config = [s3_region_name, s3_bucket_name, aws_access_key_id, aws_secret_access_key]
+
+    if not all(db_config + ssh_config + s3_config):
+        print("환경 변수 불러오기 실패")
+        return
 
 
-    db = DatabaseHandler(db_host, db_user, db_password, db_name, db_port)
-    s3 = S3Handler(s3_region_name, s3_bucket_name, aws_access_key_id, aws_secret_access_key)
+    db = DatabaseHandler(
+        db_host=db_host,
+        db_user=db_user,
+        db_password=db_password,
+        db=db_name,
+        db_port=db_port,
+        ssh_host=ssh_host,
+        ssh_port=ssh_port,
+        ssh_username=ssh_username,
+        ssh_pkey=ssh_pkey
+    )
+
+    s3 = S3Handler(
+        region_name=s3_region_name,
+        bucket_name=s3_bucket_name,
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key
+    )
     
     try:
         # target_place_count 는 10 단위로 요청
@@ -37,7 +64,7 @@ def main():
         # 숙박
         # 쇼핑
         # 음식점
-        save_travel_places(db, s3, '서울특별시', '서초구', '숙박', 50)
+        save_travel_places(db, s3, '대구광역시', '중구', '관광지', 50)
 
 
     finally:
