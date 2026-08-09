@@ -122,9 +122,9 @@ def get_json_data(url : str, params : dict):
         response = requests.get(url, params=encoding_params)
     except requests.exceptions.RequestException:
         logger.exception(
-            f'get_json_data() - API 요청 중 예외 발생\n'
-            f'URL : {url}\n'
-            f'Params : {encoding_params}'
+            f"get_json_data() - API 요청 중 예외 발생\n"
+            f"URL : {url}\n"
+            f"Params : {encoding_params}"
         )
         sys.exit(1)
 
@@ -132,11 +132,11 @@ def get_json_data(url : str, params : dict):
 
     if response.status_code != 200:
         logger.error(
-            f'get_json_data() - API 요청 실패\n'
-            f'상태 코드 : {response.status_code}\n'
-            f'컨텐츠 타입 : {content_type}\n'
-            f'요청 URL : {response.request.url}\n'
-            f'응답 내용 :\n{response.text}'
+            f"get_json_data() - API 요청 실패\n"
+            f"상태 코드 : {response.status_code}\n"
+            f"컨텐츠 타입 : {content_type}\n"
+            f"요청 URL : {response.request.url}\n"
+            f"응답 내용 :\n{response.text}"
         )
         sys.exit(1)
 
@@ -146,10 +146,10 @@ def get_json_data(url : str, params : dict):
             print(data)
         except ValueError as e:
             logger.error(
-                f'get_json_data() - JSON 파싱 실패\n'
-                f'요청 URL : {response.request.url}\n'
-                f'에러 : {e}\n'
-                f'응답 내용 :\n{response.text}'
+                f"get_json_data() - JSON 파싱 실패\n"
+                f"요청 URL : {response.request.url}\n"
+                f"에러 : {e}\n"
+                f"응답 내용 :\n{response.text}"
             )
             sys.exit(1)
 
@@ -158,16 +158,16 @@ def get_json_data(url : str, params : dict):
 
         if 'resultMsg' in data and 'resultCode' in data:
             logger.error(
-                f'get_json_data() - API 오류 응답\n'
-                f'에러 코드 : {data["resultCode"]}\n'
-                f'에러 메시지 : {data["resultMsg"]}'
+                f"get_json_data() - API 오류 응답\n"
+                f"에러 코드 : {data["resultCode"]}\n"
+                f"에러 메시지 : {data["resultMsg"]}"
             )
             sys.exit(1)
 
         logger.error(
-            f'get_json_data() - 예상하지 못한 JSON 응답\n'
-            f'요청 URL : {response.request.url}\n'
-            f'응답 데이터 : {data}'
+            f"get_json_data() - 예상하지 못한 JSON 응답\n"
+            f"요청 URL : {response.request.url}\n"
+            f"응답 데이터 : {data}"
         )
         sys.exit(1)
 
@@ -180,24 +180,24 @@ def get_json_data(url : str, params : dict):
             auth_msg = root.findtext('.//returnAuthMsg')
 
             logger.error(
-                f'get_json_data() - API 오류 응답(XML)\n'
-                f'에러 코드 : {reason_code}\n'
-                f'에러 메시지 : {auth_msg}'
+                f"get_json_data() - API 오류 응답(XML)\n"
+                f"에러 코드 : {reason_code}\n"
+                f"에러 메시지 : {auth_msg}"
             )
             sys.exit(1)
 
         except ET.ParseError as e:
             logger.error(
-                f'get_json_data() - XML 파싱 실패\n'
-                f'에러 : {e}\n'
-                f'응답 내용 :\n{response.text}'
+                f"get_json_data() - XML 파싱 실패\n"
+                f"에러 : {e}\n"
+                f"응답 내용 :\n{response.text}"
             )
             sys.exit(1)
 
     logger.error(
-        f'get_json_data() - 지원하지 않는 응답 형식\n'
-        f'컨텐츠 타입 : {content_type}\n'
-        f'응답 내용 :\n{response.text}'
+        f"get_json_data() - 지원하지 않는 응답 형식\n"
+        f"컨텐츠 타입 : {content_type}\n"
+        f"응답 내용 :\n{response.text}"
     )
     sys.exit(1)
 

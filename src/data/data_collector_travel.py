@@ -9,7 +9,7 @@ from db.db_handler import DatabaseHandler
 from model.travel_place import TravelPlace
 from model.location import Location
 from db import travel_place_db, area_db, content_type_db, travel_image_db
-from utils.utils import convert_to_datetime
+from utils.utils import convert_to_datetime, clean_use_time
 from data.data_collector_image import save_travel_image, sync_thumbnail_travel_image, sync_travel_detail_images, \
     save_travel_detail_images
 
@@ -42,7 +42,7 @@ def save_travel_places(db : DatabaseHandler,
     korea_area = area_db.get_area(db, '대한민국', city, district)
 
     if not korea_area:
-        logger.exception(f'{city}, {district} - 지역 정보 존재 안함')
+        logger.exception(f"{city}, {district} - 지역 정보 존재 안함")
         return
 
     # 컨텐츠 타입 조회
@@ -66,7 +66,7 @@ def save_travel_places(db : DatabaseHandler,
     items, total_count = fetch_page_api_items(url, params, 1)
 
     if not items:
-        logger.info(f'{city} {district} {target_content_name} - 조회된 데이터가 없음')
+        logger.info(f"{city} {district} {target_content_name} - 조회된 데이터가 없음")
         return
 
     # 전체 관광지 기준 마지막 페이지 계산
@@ -79,7 +79,7 @@ def save_travel_places(db : DatabaseHandler,
     for page_no in range(1, last_page + 1):
 
         if saved_count >= target_place_count:
-            logger.info(f'목표 저장 개수 {target_place_count} 개 달성으로 조기 종료')
+            logger.info(f"목표 저장 개수 {target_place_count} 개 달성으로 조기 종료")
             break
 
         # 첫 페이지는 이미 요청했으므로 재요청 안함
@@ -106,8 +106,8 @@ def save_travel_places(db : DatabaseHandler,
         # 실제 변경/저장된 개수
         saved_count += (result['insert'] + result['update'])
 
-    logger.info('======================================================================')
-    logger.info(f'''
+    logger.info("======================================================================")
+    logger.info(f"""
                 [{city} {district} {target_content_name} 수집 완료] 
                 
                 전체 관광지 : {total_count}개
@@ -116,9 +116,9 @@ def save_travel_places(db : DatabaseHandler,
                 신규 저장 : {total_result['insert']}개
                 수정 : {total_result['update']}개
                 변경 없음 : {total_result['skip']}개
-                '''
+                """
     )
-    logger.info('======================================================================')
+    logger.info("======================================================================")
 
 
 def process_travel_places(db : DatabaseHandler, 
@@ -169,7 +169,7 @@ def process_travel_places(db : DatabaseHandler,
         # 위도나 경도 데이터가 없으면 pass
         if item['mapx'] in (None, "", "null") or item['mapy'] in (None, "", "null"):
             result['skip'] += 1
-            logger.info(f'[SKIP] {item['title']}({item['contentid']} - 위도/경도 데이터 없음')
+            logger.info(f"[SKIP] {item['title']}({item['contentid']} - 위도/경도 데이터 없음")
             continue
 
         saved_place = travel_place_db.get_travel_place(db, item['contentid'])
@@ -178,21 +178,21 @@ def process_travel_places(db : DatabaseHandler,
         # 데이터 변경되지 않았으면 pass
         if saved_place and saved_place['api_updated_at'] == api_updated_at:
             result['skip'] += 1
-            logger.info(f'[SKIP] {saved_place['place_name']}({item['contentid']}) - 여행지 데이터 변경 없음')
+            logger.info(f"[SKIP] {saved_place['place_name']}({item['contentid']}) - 여행지 데이터 변경 없음")
             continue
 
 
-        logger.info(f'[START] {item['title']}({item['contentid']}) 데이터 수집 시작')
+        logger.info(f"[START] {item['title']}({item['contentid']}) 데이터 수집 시작")
 
         # ----------------------------
         # 관광지 소개 정보 조회
         # ----------------------------
         details = get_travel_place_detail(item['contentid'])
-        logger.info(f'[END] {item['title']}({item['contentid']}) 관광지 설명 데이터 조회 완료')
+        logger.info(f"[END] {item['title']}({item['contentid']}) 관광지 설명 데이터 조회 완료")
 
         if details['description'] is None:
             result['skip'] += 1
-            logger.info(f'[SKIP] {item['title']}({item['contentid']}) 관광지 설명 데이터 없어 데이터 수집 제외')
+            logger.info(f"[SKIP] {item['title']}({item['contentid']}) 관광지 설명 데이터 없어 데이터 수집 제외")
             continue
 
         # ----------------------------
@@ -202,7 +202,7 @@ def process_travel_places(db : DatabaseHandler,
             content_type['api_content_type_id'], 
             item['contentid']
         )
-        logger.info(f'[END] {item['title']}({item['contentid']})  관광지 전화번호, 이용시간 데이터 조회 완료')
+        logger.info(f"[END] {item['title']}({item['contentid']})  관광지 전화번호, 이용시간 데이터 조회 완료")
 
         travel_place = create_travel_place(item, details, info, location, content_type)
 
@@ -217,7 +217,7 @@ def process_travel_places(db : DatabaseHandler,
             result['update'] += 1
 
         remain_count -= 1
-        logger.info(f'[END] process_travel_places() 종료')
+        logger.info(f"[END] process_travel_places() 종료")
     
     return result
 
@@ -286,23 +286,23 @@ def get_travel_place_info(api_content_type_id : int, api_content_id : int):
    
     if api_content_type_id == 12:   # 관광지
         info['phone_number'] = item['infocenter'] or None
-        info['use_time'] = item['usetime'] or None
+        info['use_time'] = clean_use_time(item['usetime']) or None
     elif api_content_type_id == 14: # 문화시설
         info['phone_number'] = item['infocenterculture'] or None
-        info['use_time'] = item['usetimeculture'] or None 
+        info['use_time'] = clean_use_time(item['usetimeculture']) or None
     elif api_content_type_id == 28: # 레포츠
         info['phone_number'] = item['infocenterleports'] or None
-        info['use_time'] = item['usetimeleports'] or None 
+        info['use_time'] = clean_use_time(item['usetimeleports']) or None
     elif api_content_type_id == 32: # 숙박
         info['phone_number'] = item['infocenterlodging'] or None
         info['check_in_time'] = item['checkintime'] or None
         info['check_out_time'] = item['checkouttime'] or None
     elif api_content_type_id == 38: # 쇼핑      
         info['phone_number'] = item['infocentershopping'] or None
-        info['use_time'] = item['opentime'] or None 
+        info['use_time'] = clean_use_time(item['opentime']) or None
     elif api_content_type_id == 39: # 음식점
         info['phone_number'] = item['infocenterfood'] or None
-        info['use_time'] = item['opentimefood'] or None 
+        info['use_time'] = clean_use_time(item['opentimefood']) or None
 
     return info
 
@@ -348,8 +348,8 @@ def save_new_travel_place(db : DatabaseHandler,
     uploaded_keys = []
 
     try:
-        logger.info('-------------------------------------------------------------------')
-        logger.info(f'[START] {travel_place.place_name}({travel_place.api_content_id}) 여행지 신규 저장 시작')
+        logger.info("-------------------------------------------------------------------")
+        logger.info(f"[START] {travel_place.place_name}({travel_place.api_content_id}) 여행지 신규 저장 시작")
         travel_place.created_at = now
         travel_place.updated_at = now
 
@@ -377,11 +377,11 @@ def save_new_travel_place(db : DatabaseHandler,
 
         db.commit()
 
-        logger.info('-------------------------------------------------------------------')
-        logger.info(f'[END] {travel_place.place_name}({travel_place.api_content_id}) 여행지 신규 저장 완료')
+        logger.info("-------------------------------------------------------------------")
+        logger.info(f"[END] {travel_place.place_name}({travel_place.api_content_id}) 여행지 신규 저장 완료")
 
     except Exception:
-        logger.exception(f'[ERROR] {travel_place.place_id}({travel_place.api_content_id}) 데이터 신규 저장 중 예외 발생으로 rollback')
+        logger.exception(f"[ERROR] {travel_place.place_id}({travel_place.api_content_id}) 데이터 신규 저장 중 예외 발생으로 rollback")
         db.rollback()
 
         for key in uploaded_keys:
@@ -408,8 +408,8 @@ def sync_travel_place(db : DatabaseHandler,
     uploaded_keys = []
 
     try:
-        logger.info('-------------------------------------------------------------------')
-        logger.info(f'[START] {travel_place.place_name}({travel_place.api_content_id}) 여행지 갱신 시작')
+        logger.info("-------------------------------------------------------------------")
+        logger.info(f"[START] {travel_place.place_name}({travel_place.api_content_id}) 여행지 갱신 시작")
         travel_place_db.update_travel_place(db, travel_place)
 
         # ----------------------------
@@ -440,10 +440,10 @@ def sync_travel_place(db : DatabaseHandler,
         uploaded_keys.extend(detail_uploaded_keys)
 
         db.commit()
-        logger.info(f'[END] {travel_place.place_name}({travel_place.api_content_id}) 여행지 갱신 완료')
+        logger.info(f"[END] {travel_place.place_name}({travel_place.api_content_id}) 여행지 갱신 완료")
 
     except Exception:
-        logger.exception(f'[ERROR] {travel_place.place_id}({travel_place.api_content_id}) 데이터 갱신 중 예외 발생으로 rollback')
+        logger.exception(f"[ERROR] {travel_place.place_id}({travel_place.api_content_id}) 데이터 갱신 중 예외 발생으로 rollback")
         db.rollback()
 
         # 이번 작업에서 새로 업로드한 이미지 삭제

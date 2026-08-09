@@ -39,7 +39,7 @@ def korea_city_code(db : DatabaseHandler, secret_key : str, base_url : str):
 
     db.commit()
 
-    logger.info('city 데이터 저장 완료')
+    logger.info("city 데이터 저장 완료")
 
 
 
@@ -81,7 +81,7 @@ def korea_district_code(db : DatabaseHandler, secret_key : str, base_url : str):
 
     db.commit()
 
-    logger.info('district 데이터 저장 완료')
+    logger.info("district 데이터 저장 완료")
 
 
     
@@ -103,9 +103,9 @@ def delete_district_data(db : DatabaseHandler, s3 : S3Handler, district_id : int
 
         s3.delete_objects_by_district(district_id)
 
-        logger.info(f'district_id {district_id}번 데이터 삭제 완료')
+        logger.info(f"district_id {district_id}번 데이터 삭제 완료")
 
     except Exception:
         db.rollback()
-        logger.exception(f'district_id {district_id}번 데이터 삭제 실패')
+        logger.exception(f"district_id {district_id}번 데이터 삭제 실패")
         raise

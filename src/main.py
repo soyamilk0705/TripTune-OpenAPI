@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from aws.s3_handler import S3Handler
+from data.data_cleaner import clean_saved_use_time
 from data.data_collector_travel import save_travel_places
 from db.db_handler import DatabaseHandler
 
@@ -64,8 +65,7 @@ def main():
         # 숙박
         # 쇼핑
         # 음식점
-        save_travel_places(db, s3, '경기도', '이천시', '관광지', 50)
-
+        save_travel_places(db, s3, '경기도', '이천시', '레포츠', 50)
 
     finally:
         db.close()

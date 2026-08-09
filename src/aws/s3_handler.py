@@ -25,9 +25,9 @@ class S3Handler:
 
             self.bucket_name = bucket_name
 
-            logger.info('[CONNECT] s3 bucket 연결 완료!')
+            logger.info("[CONNECT] s3 bucket 연결 완료!")
         except Exception:
-            logger.exception(f'[ERROR] s3 연결 실패')
+            logger.exception(f"[ERROR] s3 연결 실패")
             
     def upload_file(self, image_byte_arr : BytesIO, s3_object_key : str):
         try:
@@ -36,9 +36,9 @@ class S3Handler:
                 Bucket=self.bucket_name, 
                 Key=s3_object_key
             )
-            logger.info(f'[UPLOAD] {s3_object_key} 업로드 완료')
+            logger.info(f"[UPLOAD] {s3_object_key} 업로드 완료")
         except Exception:
-            logger.exception(f'[ERROR] {s3_object_key} 업로드 실패')
+            logger.exception(f"[ERROR] {s3_object_key} 업로드 실패")
 
 
     def delete_object(self, s3_object_key : str):
@@ -48,21 +48,21 @@ class S3Handler:
                 Key=s3_object_key
             )
 
-            logger.info(f'[DELETE] {s3_object_key} 삭제 완료')
+            logger.info(f"[DELETE] {s3_object_key} 삭제 완료")
         except Exception:
-            logger.exception(f'[ERROR] {s3_object_key} 삭제 실패')
+            logger.exception(f"[ERROR] {s3_object_key} 삭제 실패")
             
     
     def delete_objects_by_district(self, district_id : int):
-        prefix = f'img/korea/{district_id}/'
+        prefix = f"img/korea/{district_id}/"
 
         try:
             bucket = self.s3_resource.Bucket(self.bucket_name)
             bucket.objects.filter(Prefix=prefix).delete()
 
-            logger.info(f'[DELETE] {prefix} 이미지 삭제 완료')
+            logger.info(f"[DELETE] {prefix} 이미지 삭제 완료")
         except Exception:
-            logger.exception(f'[ERROR] {prefix} 이미지 삭제 실패')
+            logger.exception(f"[ERROR] {prefix} 이미지 삭제 실패")
 
 
     def delete_all_objects(self):
@@ -70,6 +70,6 @@ class S3Handler:
             bucket = self.s3_resource.Bucket(self.bucket_name)
             bucket.objects.all().delete()
 
-            logger.info(f'[DELETE] {self.bucket_name}의 전체 데이터 삭제 완료')
+            logger.info(f"[DELETE] {self.bucket_name}의 전체 데이터 삭제 완료")
         except Exception:
-            logger.exception(f'[ERROR] 전체 이미지 삭제 실패')
+            logger.exception(f"[ERROR] 전체 이미지 삭제 실패")

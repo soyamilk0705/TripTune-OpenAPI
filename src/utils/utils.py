@@ -1,4 +1,5 @@
 import requests
+import re
 from utils.log_handler import setup_logger
 from datetime import datetime
 from PIL import Image
@@ -42,5 +43,84 @@ def download_and_compress_image(image_url : str, quality : int):
 
         return img_byte_arr, img_size
     else:
-        logger.error(f'이미지 다운 및 압축 실패, 상태 코드 : {response.status_code}')
+        logger.error(f"이미지 다운 및 압축 실패, 상태 코드 : {response.status_code}")
         return None
+
+
+def clean_use_time(use_time: str | None):
+    if not use_time:
+        return use_time
+
+    original = use_time
+
+    # --------------------------------
+    # 1. 개행/단락 기호(¶)를 모두 <br>로 일차 통일
+    # --------------------------------
+    use_time = re.sub(
+        r'(?:<br\s*/?>|¶|\r?\n)',
+        '<br>',
+        use_time,
+        flags=re.IGNORECASE
+    )
+
+    # --------------------------------
+    # 2. ※가 나오면 앞에 <br> 추가
+    # --------------------------------
+    use_time = re.sub(
+        r'(?<!^)[ \t]*(※)',
+        r'<br>\1',
+        use_time
+    )
+
+    # --------------------------------
+    # 3. [문자] 항목이 나오면 앞에 <br> 추가
+    # --------------------------------
+    use_time = re.sub(
+        r'(?<!^)[ \t]*(\[)',
+        r'<br>\1',
+        use_time
+    )
+
+    # --------------------------------
+    # 4. [대항목]- 소항목 패턴 처리
+    # --------------------------------
+    use_time = re.sub(
+        r'\]\s*-\s*',
+        r']<br>- ',
+        use_time
+    )
+
+    # --------------------------------
+    # 5. 시간/숫자/문자 뒤에 - 소항목 패턴 처리
+    # --------------------------------
+    use_time = re.sub(
+        r'(\d{1,2}:\d{2})\s*-\s*(?=[^\d\s])',
+        r'\1<br>- ',
+        use_time
+    )
+
+    # -------------------------------------------------------------
+    # 6. 위 과정에서 발생한 중복 <br> (예: <br><br>, <br> <br> 등)
+    #    및 주변 공백을 하나의 <br>로 일괄 합치기
+    # -------------------------------------------------------------
+    use_time = re.sub(
+        r'(?:\s*<br\s*/?>\s*)+',
+        '<br>',
+        use_time,
+        flags=re.IGNORECASE
+    )
+
+    # 앞뒤 불필요한 <br> 정리
+    use_time = re.sub(
+        r'^(?:<br>)+|(?:<br>)+$',
+        '',
+        use_time
+    )
+
+    if original != use_time:
+        logger.info(
+            f"[EDIT] 이용시간 데이터 정제\n"
+            f"{original} → {use_time}"
+        )
+
+    return use_time

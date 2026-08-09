@@ -1,8 +1,15 @@
+from idlelib import query
+
 from db.db_handler import DatabaseHandler
 from model.travel_place import TravelPlace
 
 def travel_place_exists(db : DatabaseHandler, api_content_id : int):
-    query = 'SELECT EXISTS (SELECT 1 FROM travel_place WHERE api_content_id = %s)'
+    query = '''
+        SELECT EXISTS (SELECT 1 
+                       FROM travel_place 
+                       WHERE api_content_id = %s
+        )
+    '''
     result = db.execute_fetch_one(query, (api_content_id,))
 
     if result:
@@ -18,6 +25,14 @@ def get_travel_place(db : DatabaseHandler, api_content_id : int):
     '''
     return db.execute_fetch_one(query, (api_content_id,))
 
+def get_travel_places(db: DatabaseHandler, start : int, end : int):
+    query = '''
+        SELECT *
+        FROM travel_place
+        WHERE place_id BETWEEN %s AND %s
+        ORDER BY place_id
+    '''
+    return db.execute_fetch_all(query, (start, end))
 
 def get_empty_description_travel_place(db : DatabaseHandler):
     query = '''
@@ -127,6 +142,15 @@ def update_travel_place(db : DatabaseHandler, travel_place : TravelPlace):
         travel_place.description,
         travel_place.place_id,
     ))
+
+def update_use_time(db: DatabaseHandler, place_id : int, use_time : str):
+    query = '''
+        UPDATE travel_place
+        SET use_time = %s
+        WHERE place_id = %s
+    '''
+    db.execute_update(query, (use_time, place_id,))
+    db.commit()
 
 
 def delete_travel_place(db : DatabaseHandler, place_id : int):

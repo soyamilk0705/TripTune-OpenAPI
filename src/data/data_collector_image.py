@@ -36,7 +36,7 @@ def save_travel_detail_images(db : DatabaseHandler, s3 : S3Handler, place : Trav
         )
         uploaded_keys.append(key)
 
-    logger.info(f'[END] {place.place_name}({place.api_content_id}) {len(items)}개 상세 이미지 신규 저장 완료')
+    logger.info(f"[END] {place.place_name}({place.api_content_id}) {len(items)}개 상세 이미지 신규 저장 완료")
     return uploaded_keys
 
 
@@ -69,24 +69,16 @@ def sync_travel_detail_images(db : DatabaseHandler, s3 : S3Handler, place : Trav
     # 기존 이미지 삭제
     # ----------------------------
     if not saved_detail_images:
-        logger.info(f'[SKIP] {place.place_name}({place.api_content_id}) 기존 상세 이미지 없음')
+        logger.info(f"[SKIP] {place.place_name}({place.api_content_id}) 기존 상세 이미지 없음")
     else:
         for image in saved_detail_images:
             travel_image_db.delete_travel_detail_images(db, image['travel_image_id'])
             s3.delete_object(image['s3_object_key'])
 
-    logger.info(f'[END] {place.place_name}({place.api_content_id}) {len(items)}개 상세 이미지 갱신 완료')
+    logger.info(f"[END] {place.place_name}({place.api_content_id}) {len(items)}개 상세 이미지 갱신 완료")
 
     return uploaded_keys
 
-
-
-    if not saved_detail_images:
-        logger.info(f'[SKIP] {place.place_name}({place.api_content_id}) 저장된 상세 이미지 없음')
-
-    for image in saved_detail_images:
-        travel_image_db.delete_travel_detail_images(db, image['travel_image_id'])
-        s3.delete_object(image['s3_object_key'])
 
 
 
@@ -128,7 +120,7 @@ def sync_thumbnail_travel_image(db : DatabaseHandler,
 
     # 동일한 이미지면 아무것도 하지 않음
     if thumbnail_image['api_file_url'] == image_url:
-        logger.info(f'[SKIP] {place.place_name}({place.api_content_id}) 썸네일 변경 없음')
+        logger.info(f"[SKIP] {place.place_name}({place.api_content_id}) 썸네일 변경 없음")
         return None
 
     # ----------------------------
@@ -149,7 +141,7 @@ def sync_thumbnail_travel_image(db : DatabaseHandler,
     travel_image_db.delete_travel_thumbnail_image(db, thumbnail_image['travel_image_id'])
     s3.delete_object(thumbnail_image['s3_object_key'])
 
-    logger.info(f'[END] {place.place_name}({place.api_content_id}) 썸네일 갱신 완료')
+    logger.info(f"[END] {place.place_name}({place.api_content_id}) 썸네일 갱신 완료")
 
     return new_key
 
