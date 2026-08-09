@@ -118,9 +118,6 @@ def clean_use_time(use_time: str | None):
     )
 
     if original != use_time:
-        logger.info(
-            f"[EDIT] 이용시간 데이터 정제\n"
-            f"{original} → {use_time}"
-        )
+        logger.info(f"[EDIT] 이용시간 데이터 정제 | {original} → {use_time}")
 
     return use_time
