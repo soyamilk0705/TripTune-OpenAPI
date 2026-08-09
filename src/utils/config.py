@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-BASE_URL = 'http://apis.data.go.kr/B551011/KorService2'
+BASE_URL = 'https://apis.data.go.kr/B551011/KorService2'
 NUM_OF_ROWS = 10
 MOBILE_OS = 'ETC'
 MOBILE_APP = 'TripTune'

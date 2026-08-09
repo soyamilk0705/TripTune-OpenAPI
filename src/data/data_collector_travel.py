@@ -129,26 +129,28 @@ def process_travel_places(db : DatabaseHandler,
                           remain_count : int):
 
     """
-    1. place 조회(DB)
-    2. API 수정시간 비교
-    3. 변경된 place거나 신규인 경우 상세 정보 조회(API)
+    1. 위도/경도 데이터 없으면 pass
+    2. place 조회(DB)
+    3. API 수정시간 비교
+        3.1. 저장된 place가 있고 수정 시간이 변경되지 않았다면 pass
+        3.2. 변경된 place거나 신규인 경우 상세 정보 조회(API)
+            - 신규 → 4번(place 신규 저장) 진행
+            - 변경된 place → 5번(place 갱신) 진행
 
-    4. place가 없으면
-        4.1 place insert
-        4.2 썸네일 저장
-        4.3 상세 이미지 조회(API)
-        4.4 상세 이미지 저장
+    4. place 신규 저장
+        4.1. place insert
+        4.2. 썸네일 저장
+        4.3. 상세 이미지 조회(API)
+        4.4. 상세 이미지 저장
 
-    5. place가 있으면
-        5.1 api_updated_at == modifiedtime
-            - 아무것도 안함
-        5.2 api_updated_at != modifiedtime
-            5.2.1. place update
-            5.2.2. 썸네일 비교
-                - 다름 → 기존 삭제 후 새로 저장
-            5.2.3 상세 이미지 조회(API)
-                - 기존 상세 이미지 삭제
-                - 상세 이미지 저장
+    5. place 갱신
+        5.1. place update
+        5.2. 썸네일 비교
+            - 다름 → 새로 저장 후 기존 삭제
+            - 같음 → pass
+        5.3. 상세 이미지 조회(API)
+            - 상세 이미지 저장
+            - 기존 상세 이미지 삭제
     """
     
     # 총 저장된 데이터 갯수 확인
@@ -163,6 +165,12 @@ def process_travel_places(db : DatabaseHandler,
         # 목표 갯수 달성
         if remain_count <= 0:
             break
+
+        # 위도나 경도 데이터가 없으면 pass
+        if item['mapx'] in (None, "", "null") or item['mapy'] in (None, "", "null"):
+            result['skip'] += 1
+            logger.info(f'[SKIP] {item['title']}({item['contentid']} - 위도/경도 데이터 없음')
+            continue
 
         saved_place = travel_place_db.get_travel_place(db, item['contentid'])
         api_updated_at = convert_to_datetime(item['modifiedtime'])

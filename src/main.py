@@ -64,7 +64,7 @@ def main():
         # 숙박
         # 쇼핑
         # 음식점
-        save_travel_places(db, s3, '대구광역시', '중구', '관광지', 50)
+        save_travel_places(db, s3, '경기도', '이천시', '관광지', 50)
 
 
     finally:
