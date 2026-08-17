@@ -84,8 +84,8 @@ def sync_travel_detail_images(db : DatabaseHandler, s3 : S3Handler, place : Trav
 
 def get_travel_detail_images(api_content_id : int):
     """
-    파라미터로 전달된 지역을 이용해 관광지 데이터를 DB에서 조회한다.
-    DB에서 조회한 관광지 데이터를 이용해 open api에 이미지를 조회 후 데이터를 정제해 반환한다.
+    파라미터로 전달된 지역을 이용해 여행지 데이터를 DB에서 조회한다.
+    DB에서 조회한 여행지 데이터를 이용해 open api에 이미지를 조회 후 데이터를 정제해 반환한다.
 
     """
     url = BASE_URL + '/detailImage2'
@@ -153,7 +153,7 @@ def save_travel_image(db : DatabaseHandler,
                       is_thumbnail : bool, 
                       serial_number : str | None):
     """
-    파라미터로 전달된 관광지 이미지 데이터를 DB, S3에 저장한다.
+    파라미터로 전달된 여행지 이미지 데이터를 DB, S3에 저장한다.
     이미지 파일의 경우 S3에 이미지 파일로 저장된다.
 
     *is_thumbnail이 True/False 에 따라서 저장되는 이미지 파일명이 다르게 설정했다.

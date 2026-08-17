@@ -65,7 +65,7 @@ def main():
         # 숙박
         # 쇼핑
         # 음식점
-        save_travel_places(db, s3, '경기도', '이천시', '레포츠', 50)
+        save_travel_places(db, s3, '충청남도', '서산시', '문화시설', 50)
 
     finally:
         db.close()

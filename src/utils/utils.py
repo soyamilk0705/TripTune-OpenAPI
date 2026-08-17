@@ -19,10 +19,10 @@ def convert_to_datetime(date_string : str) -> datetime:
 
 def download_and_compress_image(image_url : str, quality : int):
     """
-    파라미터로 전달된 관광지 이미지 url에서 이미지를 다운로드 한 후 압축한다.
+    파라미터로 전달된 여행지 이미지 url에서 이미지를 다운로드 한 후 압축한다.
 
     [Parameter]
-    image_url: open api 에서 제공하는 관광지 이미지 url
+    image_url: open api 에서 제공하는 여행지 이미지 url
     quality: 압축 비율
 
     [Return]

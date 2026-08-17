@@ -23,8 +23,8 @@ def save_travel_places(db : DatabaseHandler,
                        target_content_name : str, 
                        target_place_count : int):
     """
-    파라미터로 전달된 지역 정보와 DB에 저장된 컨텐츠 타입을 이용해 특정 지역의 관광지를 조회하고 저장한다.
-    관광지 정보, 해당 관광지에 대한 소개 정보, 썸네일 이미지 등을 저장하는 기능을 한다.
+    파라미터로 전달된 지역 정보와 DB에 저장된 컨텐츠 타입을 이용해 특정 지역의 여행지를 조회하고 저장한다.
+    여행지 정보, 해당 여행지에 대한 소개 정보, 썸네일 이미지 등을 저장하는 기능을 한다.
     이미지 파일의 경우 S3에 이미지 파일로 저장된다.
     저장 위치: travel_place
 
@@ -69,7 +69,7 @@ def save_travel_places(db : DatabaseHandler,
         logger.info(f"{city} {district} {target_content_name} - 조회된 데이터가 없음")
         return
 
-    # 전체 관광지 기준 마지막 페이지 계산
+    # 전체 여행지 기준 마지막 페이지 계산
     last_page = ceil(total_count / NUM_OF_ROWS)
     saved_count = 0
 
@@ -110,7 +110,7 @@ def save_travel_places(db : DatabaseHandler,
     logger.info(f"""
                 [{city} {district} {target_content_name} 수집 완료] 
                 
-                전체 관광지 : {total_count}개
+                전체 여행지 : {total_count}개
                 목표 저장 : {target_place_count}개
                 저장/수정 완료 : {saved_count}개
                 신규 저장 : {total_result['insert']}개
@@ -185,24 +185,24 @@ def process_travel_places(db : DatabaseHandler,
         logger.info(f"[START] {item['title']}({item['contentid']}) 데이터 수집 시작")
 
         # ----------------------------
-        # 관광지 소개 정보 조회
+        # 여행지 소개 정보 조회
         # ----------------------------
         details = get_travel_place_detail(item['contentid'])
-        logger.info(f"[END] {item['title']}({item['contentid']}) 관광지 설명 데이터 조회 완료")
+        logger.info(f"[END] {item['title']}({item['contentid']}) 여행지 설명 데이터 조회 완료")
 
         if details['description'] is None:
             result['skip'] += 1
-            logger.info(f"[SKIP] {item['title']}({item['contentid']}) 관광지 설명 데이터 없어 데이터 수집 제외")
+            logger.info(f"[SKIP] {item['title']}({item['contentid']}) 여행지 설명 데이터 없어 데이터 수집 제외")
             continue
 
         # ----------------------------
-        # 관광지 기본 정보 조회
+        # 여행지 기본 정보 조회
         # ----------------------------
         info = get_travel_place_info(
             content_type['api_content_type_id'], 
             item['contentid']
         )
-        logger.info(f"[END] {item['title']}({item['contentid']})  관광지 전화번호, 이용시간 데이터 조회 완료")
+        logger.info(f"[END] {item['title']}({item['contentid']})  여행지 전화번호, 이용시간 데이터 조회 완료")
 
         travel_place = create_travel_place(item, details, info, location, content_type)
 
@@ -225,7 +225,7 @@ def process_travel_places(db : DatabaseHandler,
 
 def get_travel_place_detail(api_content_id : int):
     """
-    특정 관광지에 대한 소개 정보(description)와 홈페이지 정보(<a> 태그로 시작하는 홈페이지 주소)를 조회하고 저장한다.
+    특정 여행지에 대한 소개 정보(description)와 홈페이지 정보(<a> 태그로 시작하는 홈페이지 주소)를 조회하고 저장한다.
     저장 위치 : travel_place.description
 
     """
@@ -259,7 +259,7 @@ def get_travel_place_detail(api_content_id : int):
 
 def get_travel_place_info(api_content_type_id : int, api_content_id : int):
     """
-    콘텐츠 타입에 따른 관광지 정보(전화번호, 이용시간, 체크인 시간, 체크아웃 시간)를 조회한다.
+    콘텐츠 타입에 따른 여행지 정보(전화번호, 이용시간, 체크인 시간, 체크아웃 시간)를 조회한다.
     저장 위치 : travel_place.phone_number, travel_place.use_time, travel_place.check_in_time, travel_place.check_out_time
 
     """
